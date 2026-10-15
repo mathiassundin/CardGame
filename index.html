@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame v.11</title>
+    <title>CardGame v.12</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -414,6 +414,33 @@
             color: #64748b;
             margin-right: 4px;
         }
+
+        /* Overlay Notice for Copying Buttons */
+        .copy-button-container {
+            position: relative;
+            display: inline-block;
+        }
+        .copy-notice-overlay {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #16a34a;
+            color: white;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, top 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+        .copy-notice-overlay.show {
+            opacity: 1;
+            top: -35px;
+        }
     </style>
 </head>
 <body>
@@ -421,7 +448,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame v.11</h2>
+            <h2>CardGame v.12</h2>
 
             <!-- Inbyggda regler i startmenyn -->
             <details style="text-align: left; margin-bottom: 0.75rem;">
@@ -505,8 +532,16 @@
                     <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.25rem;">Dela rummet med kod eller länk:</div>
                     <div style="display:flex; gap:0.4rem; margin-bottom:0.75rem;">
                         <input type="text" id="display-room-code" readonly style="margin:0; text-align:center; font-weight:bold; color:#f59e0b; font-size:1rem; flex:1;">
-                        <button class="btn" style="padding:0.4rem 0.6rem; background:#334155; font-size:0.8rem;" onclick="kopieraRumskod()">Kod 📋</button>
-                        <button class="btn" style="padding:0.4rem 0.6rem; background:#0d9488; font-size:0.8rem;" onclick="kopieraRumsLank()">Länk 🔗</button>
+                        
+                        <div class="copy-button-container">
+                            <span id="copy-code-notice" class="copy-notice-overlay">Du har kopierat kod</span>
+                            <button class="btn" style="padding:0.4rem 0.6rem; background:#334155; font-size:0.8rem;" onclick="kopieraRumskod()">Kod 📋</button>
+                        </div>
+                        
+                        <div class="copy-button-container">
+                            <span id="copy-link-notice" class="copy-notice-overlay">Du har kopierat länken</span>
+                            <button class="btn" style="padding:0.4rem 0.6rem; background:#0d9488; font-size:0.8rem;" onclick="kopieraRumsLank()">Länk 🔗</button>
+                        </div>
                     </div>
 
                     <div id="host-controls">
@@ -543,7 +578,7 @@
                     </div>
 
                     <section class="chat-section" id="lobby-chat-section" style="margin-top:0.5rem; margin-bottom:0.75rem;">
-                        <h3 style="font-size: 0.85rem; color: #38bdf8;">Rumschatt (Endast ren text)</h3>
+                        <h3 style="font-size: 0.85rem; color: #38bdf8; text-align: right;">Lobbychat</h3>
                         <div id="chat-messages" class="chat-messages"></div>
                         <div class="chat-input-row" style="margin-top:0.3rem;">
                             <input type="text" id="chat-input" placeholder="Skriv meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') skickaChatMeddelande();">
@@ -577,7 +612,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame v.11</h1>
+        <h1>CardGame v.12</h1>
     </header>
 
     <main class="game-container">
@@ -606,12 +641,12 @@
         <section id="local-player-section" class="section-card">
             <h2 class="section-title">
                 <span id="local-player-name">Din Spelplan (Du)</span>
-                <span id="player-stock-count" style="color:#38bdf8;">Stock: 20</span>
+                <span id="player-stock-count" style="color:#38bdf8;">Antal kort kvar i min korthög: 20</span>
             </h2>
 
             <div class="play-area">
                 <div class="sub-group">
-                    <h3>Din Stock-hög</h3>
+                    <h3>Min spelhög</h3>
                     <div style="display: flex; gap: 1rem; align-items: center;">
                         <div id="player-stock-top" class="card empty-slot" onclick="valjKort('stock', 0)">Inget</div>
                         <div style="font-size: 0.75rem; color: #94a3b8;">Klicka för att spela kortet från stocken.</div>
@@ -631,7 +666,7 @@
         </section>
 
         <section class="chat-section" id="game-chat-section" style="display: none;">
-            <h3 style="font-size: 0.9rem; color: #38bdf8;">Rumschatt (Endast ren text)</h3>
+            <h3 style="font-size: 0.9rem; color: #38bdf8; text-align: right;">Lobbychat</h3>
             <div id="game-chat-messages" class="chat-messages"></div>
             <div class="chat-input-row" style="margin-top:0.3rem;">
                 <input type="text" id="game-chat-input" placeholder="Skriv ett meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') skickaChatMeddelande();">
@@ -1272,8 +1307,8 @@
                 document.getElementById('winner-text').textContent = gameState.customWinMsg;
             } else {
                 document.getElementById('winner-text').textContent = jagVann 
-                    ? "Du tömde din stock först och vann spelet!" 
-                    : `${gameState.winnerName} tömde sin stock först och vann spelet. Bättre lycka nästa gång!`;
+                    ? "Du tömde din hög först och vann spelet!" 
+                    : `${gameState.winnerName} tömde sin hög först och vann spelet. Bättre lycka nästa gång!`;
             }
 
             let modalButtons = document.getElementById('winner-modal-buttons');
@@ -1472,7 +1507,6 @@
 
             status.textContent = "Söker efter rum...";
 
-            // Stäng tidigare anslutning om den finns för att undvika spökevents hos värden
             if (hostConnection) {
                 try { hostConnection.close(); } catch(e){}
                 hostConnection = null;
@@ -1531,18 +1565,26 @@
             sendToHost({ type: 'PLAYER_READY_STATUS', peerId: peer.id, isReady: true });
         }
 
+        function visaSnabbtMeddelande(elementId) {
+            let el = document.getElementById(elementId);
+            if (el) {
+                el.classList.add('show');
+                setTimeout(() => el.classList.remove('show'), 1500);
+            }
+        }
+
         function kopieraRumskod() {
             let codeInput = document.getElementById('display-room-code');
             codeInput.select();
             navigator.clipboard.writeText(codeInput.value);
-            visaToast("Rumskod kopierad!");
+            visaSnabbtMeddelande('copy-code-notice');
         }
 
         function kopieraRumsLank() {
             let roomCode = document.getElementById('display-room-code').value;
             let fullUrl = window.location.origin + window.location.pathname + '?room=' + roomCode;
             navigator.clipboard.writeText(fullUrl);
-            visaToast("Inbjudningslänk kopierad!");
+            visaSnabbtMeddelande('copy-link-notice');
         }
 
         function uppdateraLobbyUI() {
@@ -1627,7 +1669,6 @@
 
                 if (nameExists) {
                     conn.send({ type: 'NAME_TAKEN', name: data.name });
-                    // Stäng anslutningen för att inte trigga felet om spelare byter namn och försöker igen
                     setTimeout(() => { try { conn.close(); } catch(e){} }, 200);
                     return;
                 }
@@ -1979,7 +2020,7 @@
                 centerContainer.appendChild(btn);
             });
 
-            document.getElementById('player-stock-count').textContent = 'Stock: ' + user.stock.length;
+            document.getElementById('player-stock-count').textContent = 'Antal kort kvar i min korthög: ' + user.stock.length;
             let pStockTopEl = document.getElementById('player-stock-top');
             let topUserStock = user.stock.length > 0 ? user.stock[user.stock.length - 1] : null;
             let isStockSelected = gameState.selectedCard && gameState.selectedCard.source === 'stock';
