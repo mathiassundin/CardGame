@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skip-Bo Webbspel</title>
+    <title>CardGame</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -425,6 +425,22 @@
 
             <div id="setup-view-single" style="display: none;">
                 <h3 style="color: #38bdf8; margin-bottom: 0.75rem; font-size: 1.1rem;">Single Player</h3>
+                
+                <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Spelläge:</label>
+                <select id="single-game-mode" onchange="andraSinglelageVal()">
+                    <option value="standard">Standard</option>
+                    <option value="blitz">Blitz (Tidsbegränsad tur)</option>
+                </select>
+
+                <div id="single-blitz-container" style="display: none; margin-bottom: 0.5rem;">
+                    <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Blitz-tid per tur:</label>
+                    <select id="single-blitz-time">
+                        <option value="15">15 sekunder</option>
+                        <option value="20" selected>20 sekunder</option>
+                        <option value="30">30 sekunder</option>
+                    </select>
+                </div>
+
                 <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Antal spelare & stockstorlek:</label>
                 <select id="single-player-count">
                     <option value="2">2 Spelare (20 kort i stocken)</option>
@@ -467,6 +483,22 @@
                     </div>
 
                     <div id="host-controls">
+                        <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Spelläge (Admin):</label>
+                        <select id="online-game-mode" onchange="andraOnlineLobbyVal()">
+                            <option value="standard">Standard</option>
+                            <option value="blitz">Blitz (Tidsbegränsad tur)</option>
+                        </select>
+
+                        <div id="online-blitz-container" style="display: none; margin-bottom: 0.5rem;">
+                            <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Blitz-tid per tur:</label>
+                            <select id="online-blitz-time">
+                                <option value="10">10 sekunder</option>
+                                <option value="15">15 sekunder</option>
+                                <option value="20" selected>20 sekunder</option>
+                                <option value="30">30 sekunder</option>
+                            </select>
+                        </div>
+
                         <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Storlek på starthög:</label>
                         <select id="online-stock-size">
                             <option value="20">20 kort i stocken</option>
@@ -476,7 +508,7 @@
                         </select>
                     </div>
 
-                    <div style="text-align:left; font-size:0.85rem; margin-bottom:0.25rem; font-weight:bold;">Anslutna spelare (max 8):</div>
+                    <div id="lobby-player-count-title" style="text-align:left; font-size:0.85rem; margin-bottom:0.25rem; font-weight:bold;">Anslutna spelare (1/8):</div>
                     <ul id="connected-players-list" class="lobby-list"></ul>
 
                     <!-- Chatt synlig redan i lobbyn -->
@@ -505,8 +537,8 @@
         <div class="modal-card">
             <h2 id="winner-title">🏆 Vinnare!</h2>
             <p id="winner-text" style="margin-bottom: 1.5rem; font-size: 1.1rem;"></p>
-            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
-                <button class="btn" style="background: #2563eb;" onclick="oppnaSetup()">Tillbaka till Huvudmeny 🏠</button>
+            <div style="display: flex; flex-direction: column; gap: 0.6rem;" id="winner-modal-buttons">
+                <button class="btn" style="background: #2563eb;" onclick="atergaTillLobbyFranVinst()">Tillbaka till Lobby 🏠</button>
             </div>
         </div>
     </div>
@@ -546,7 +578,10 @@
                 <span id="round-display" style="color: #38bdf8;">Omgång: 1</span>
                 <span id="deck-count">Draghög: 162</span>
                 <span id="recycle-count" style="color: #94a3b8;">Kasserade: 0</span>
-                <button id="in-game-menu-btn" class="btn" style="padding: 0.2rem 0.6rem; min-height: 32px; font-size: 0.8rem; display: none;" onclick="oppnaSetup()">Meny</button>
+                <div style="display:flex; gap:0.4rem;">
+                    <button id="leave-game-btn" class="btn" style="padding: 0.2rem 0.6rem; min-height: 32px; font-size: 0.8rem; background: #b91c1c; display: none;" onclick="bekraftaLamnaSpel()">Lämna</button>
+                    <button id="in-game-menu-btn" class="btn" style="padding: 0.2rem 0.6rem; min-height: 32px; font-size: 0.8rem; display: none;" onclick="oppnaSetup()">Meny</button>
+                </div>
             </div>
             <div class="center-piles" id="center-piles-container"></div>
         </section>
@@ -601,6 +636,13 @@
         let hostConnection = null;
         let connectedPlayersList = [];
         let senasteDragInfo = null;
+        let currentRoomId = '';
+
+        // Blitz timer variabler
+        let gameMode = 'standard'; // 'standard' eller 'blitz'
+        let blitzTimeLimit = 20; // sekunder
+        let blitzTimerInterval = null;
+        let blitzTimeRemaining = 20;
 
         let gameState = {
             numPlayers: 2,
@@ -615,16 +657,29 @@
             winnerName: null
         };
 
+        function andraSinglelageVal() {
+            let mode = document.getElementById('single-game-mode').value;
+            document.getElementById('single-blitz-container').style.display = (mode === 'blitz') ? 'block' : 'none';
+        }
+
+        function andraOnlineLobbyVal() {
+            let mode = document.getElementById('online-game-mode').value;
+            document.getElementById('online-blitz-container').style.display = (mode === 'blitz') ? 'block' : 'none';
+        }
+
         function oppnaSetup() {
+            stoppaBlitzTimer();
             document.getElementById('winner-modal').style.display = 'none';
             document.getElementById('setup-modal').style.display = 'flex';
             document.getElementById('in-game-menu-btn').style.display = 'none';
+            document.getElementById('leave-game-btn').style.display = 'none';
             document.getElementById('game-chat-section').style.display = 'none';
             visaHuvudmeny();
         }
 
         function visaHuvudmeny() {
             spellage = 'single';
+            stoppaBlitzTimer();
             document.getElementById('setup-view-mode').style.display = 'block';
             document.getElementById('setup-view-single').style.display = 'none';
             document.getElementById('setup-view-online').style.display = 'none';
@@ -639,6 +694,7 @@
             connections = [];
             hostConnection = null;
             connectedPlayersList = [];
+            currentRoomId = '';
         }
 
         function visaSingleSetup() {
@@ -735,6 +791,9 @@
             document.getElementById('setup-modal').style.display = 'none';
             document.getElementById('game-chat-section').style.display = 'none';
             
+            gameMode = document.getElementById('single-game-mode').value;
+            blitzTimeLimit = parseInt(document.getElementById('single-blitz-time').value);
+
             let val = document.getElementById('single-player-count').value;
             let antal = val === 'debug' ? 2 : parseInt(val);
             let stockStorlek = val === 'debug' ? 2 : (antal === 2 ? 20 : (antal === 3 ? 16 : 12));
@@ -764,6 +823,7 @@
 
             fyllHand(0);
             visaToast("Nytt spel startat! Din tur.");
+            startaBlitzTimerOmKrävs();
             uppdateraUI();
         }
 
@@ -884,8 +944,60 @@
             return true;
         }
 
+        function startaBlitzTimerOmKrävs() {
+            stoppaBlitzTimer();
+            if (gameMode !== 'blitz' || gameState.gameOver) return;
+
+            blitzTimeRemaining = blitzTimeLimit;
+            blitzTimerInterval = setInterval(() => {
+                blitzTimeRemaining--;
+                let currentP = gameState.players[gameState.turnIndex];
+                let bannerBox = document.getElementById('turn-banner-box');
+
+                if (!gameState.gameOver && bannerBox) {
+                    let baseTxt = currentP.isBot || gameState.turnIndex !== myPlayerId 
+                        ? `⏳ VÄNTAR PÅ TUR: Det är ${currentP.name}s tur.` 
+                        : `⭐ DIN TUR!`;
+                    bannerBox.textContent = `${baseTxt} [Blitz-tid kvar: ${blitzTimeRemaining}s]`;
+                }
+
+                if (blitzTimeRemaining <= 0) {
+                    stoppaBlitzTimer();
+                    // Tiden ute -> tvinga nästa tur (eller kasta ett slumpmässigt kort om det är spelarens tur)
+                    if (spellage === 'single' || (spellage === 'online' && isHost)) {
+                        tvingaSlutBlixtTur();
+                    }
+                }
+            }, 1000);
+        }
+
+        function stoppaBlitzTimer() {
+            if (blitzTimerInterval) {
+                clearInterval(blitzTimerInterval);
+                blitzTimerInterval = null;
+            }
+        }
+
+        function tvingaSlutBlixtTur() {
+            if (gameState.gameOver) return;
+            let p = gameState.players[gameState.turnIndex];
+            // Om spelaren har kort på hand, lägg det första på första lediga slänghögen
+            if (p.hand.length > 0) {
+                let avlagt = p.hand.splice(0, 1)[0];
+                let dIdx = 0;
+                p.discards[dIdx].push(avlagt);
+                visaToast(`${p.name} fick tidsbrist i Blitz!`);
+            }
+            nastaTur();
+            if (spellage === 'online' && isHost) {
+                broadcastState();
+            }
+            uppdateraUI();
+        }
+
         function nastaTur() {
             if (gameState.gameOver) return;
+            stoppaBlitzTimer();
             gameState.turnIndex = (gameState.turnIndex + 1) % gameState.numPlayers;
             gameState.selectedCard = null;
 
@@ -893,6 +1005,8 @@
                 gameState.currentRound++;
             }
             fyllHand(gameState.turnIndex);
+
+            startaBlitzTimerOmKrävs();
 
             let currentP = gameState.players[gameState.turnIndex];
             if (currentP.isBot) {
@@ -1056,9 +1170,11 @@
             uppdateraUI();
         }
 
-        function avslutaSpelMedVinnare(vinnarNamn) {
+        function avslutaSpelMedVinnare(vinnarNamn, customMessage = null) {
+            stoppaBlitzTimer();
             gameState.gameOver = true;
             gameState.winnerName = vinnarNamn;
+            if (customMessage) gameState.customWinMsg = customMessage;
             if (spellage === 'online' && isHost) {
                 broadcastState();
             }
@@ -1070,11 +1186,99 @@
             let jagVann = gameState.winnerName === user.name;
 
             document.getElementById('winner-title').textContent = jagVann ? "🏆 GRATTIS! DU VANN!" : "💔 SPELET ÄR SLUT!";
-            document.getElementById('winner-text').textContent = jagVann 
-                ? "Du tömde din stock först och vann spelet!" 
-                : `${gameState.winnerName} tömde sin stock först och vann spelet. Bättre lycka nästa gång!`;
+            if (gameState.customWinMsg) {
+                document.getElementById('winner-text').textContent = gameState.customWinMsg;
+            } else {
+                document.getElementById('winner-text').textContent = jagVann 
+                    ? "Du tömde din hög först och vann spelet!" 
+                    : `${gameState.winnerName} tömde sin hög först och vann spelet. Bättre lycka nästa gång!`;
+            }
+
+            let modalButtons = document.getElementById('winner-modal-buttons');
+            if (spellage === 'online') {
+                modalButtons.innerHTML = `<button class="btn" style="background: #2563eb;" onclick="atergaTillLobbyFranVinst()">Tillbaka till Lobby 🏠</button>`;
+            } else {
+                modalButtons.innerHTML = `<button class="btn" style="background: #2563eb;" onclick="oppnaSetup()">Tillbaka till Huvudmeny 🏠</button>`;
+            }
 
             document.getElementById('winner-modal').style.display = 'flex';
+        }
+
+        function bekraftaLamnaSpel() {
+            if (confirm("Vill du verkligen lämna spelet?")) {
+                lamnaSpelTillLobby();
+            }
+        }
+
+        function lamnaSpelTillLobby() {
+            let myUser = gameState.players[myPlayerId];
+            let myName = myUser ? myUser.name : "En spelare";
+
+            if (spellage === 'online') {
+                let msgPayload = { type: 'PLAYER_LEFT_GAME', playerName: myName, playerId: myPlayerId };
+                if (isHost) {
+                    hanteraSpelareLamnade(myName, myPlayerId);
+                    connections.forEach(c => c.send(msgPayload));
+                } else if (hostConnection) {
+                    hostConnection.send(msgPayload);
+                    atergaTillLobbyLokal();
+                }
+            } else {
+                oppnaSetup();
+            }
+        }
+
+        function hanteraSpelareLamnade(playerName, playerId) {
+            let p = gameState.players[playerId];
+            if (p) {
+                if (p.stock) gameState.recycleDeck.push(...p.stock);
+                if (p.hand) gameState.recycleDeck.push(...p.hand);
+                p.discards.forEach(hog => {
+                    if (hog) gameState.recycleDeck.push(...hog);
+                });
+            }
+
+            broadcastSystemMessage(`${playerName} har lämnat spelet. Deras kort har lagts till i kasserade högen.`);
+
+            // Kontrollera om det enbart är 2 spelare totalt kvar i gameState och en lämnar -> den kvarvarande vinner automatiskt!
+            let aktivaSpelareKvar = gameState.players.filter(pl => pl.stock.length > 0 || pl === gameState.players[myPlayerId]); 
+            // För en robust koll: räkna spelare vars stock inte är helt nollad pga avhopp, eller kolla aktiva spelarobjekt.
+            // Låt oss markera spelarens stock som tom:
+            if (p) p.stock = [];
+
+            let levandeSpelare = gameState.players.filter(pl => pl.stock && pl.stock.length > 0);
+            if (gameState.numPlayers === 2 && levandeSpelare.length === 1 && !gameState.gameOver) {
+                let vinnare = levandeSpelare[0];
+                avslutaSpelMedVinnare(vinnare.name, `🏆 Du vann för du är ensam kvar i spelet!`);
+                return;
+            }
+
+            if (isHost) {
+                connections.forEach(c => c.send({ type: 'RETURN_TO_LOBBY' }));
+                atergaTillLobbyLokal();
+            }
+        }
+
+        function atergaTillLobbyLokal() {
+            stoppaBlitzTimer();
+            document.getElementById('winner-modal').style.display = 'none';
+            document.getElementById('setup-modal').style.display = 'flex';
+            document.getElementById('online-step-1').style.display = 'none';
+            document.getElementById('online-step-join').style.display = 'none';
+            document.getElementById('online-lobby-view').style.display = 'block';
+            document.getElementById('game-chat-section').style.display = 'none';
+            document.getElementById('in-game-menu-btn').style.display = 'none';
+            document.getElementById('leave-game-btn').style.display = 'none';
+            uppdateraLobbyUI();
+        }
+
+        function atergaTillLobbyFranVinst() {
+            if (spellage === 'online' && isHost) {
+                connections.forEach(c => c.send({ type: 'RETURN_TO_LOBBY' }));
+                atergaTillLobbyLokal();
+            } else if (spellage === 'online') {
+                atergaTillLobbyLokal();
+            }
         }
 
         /* ONLINE PEERJS LOBBY & MULTIPLAYER (UPP TILL 8 SPELARE) */
@@ -1088,6 +1292,7 @@
                 peer.on('open', (id) => {
                     isHost = true;
                     myPlayerId = 0;
+                    currentRoomId = id;
                     connectedPlayersList = [{ id: 0, name: nick, isHost: true, peerId: id, color: PLAYER_COLORS[0] }];
                     
                     document.getElementById('online-step-1').style.display = 'none';
@@ -1145,6 +1350,7 @@
                     let conn = peer.connect(roomId);
                     isHost = false;
                     hostConnection = conn;
+                    currentRoomId = roomId;
 
                     conn.on('open', () => {
                         connections = [conn];
@@ -1186,6 +1392,11 @@
                 list.appendChild(li);
             });
 
+            let countTitle = document.getElementById('lobby-player-count-title');
+            if (countTitle) {
+                countTitle.textContent = `Anslutna spelare (${connectedPlayersList.length}/8):`;
+            }
+
             let startBtn = document.getElementById('start-online-game-btn');
             if (isHost) {
                 startBtn.disabled = connectedPlayersList.length < 2;
@@ -1226,16 +1437,32 @@
                 uppdateraLobbyUI();
             } else if (data.type === 'SYSTEM_MESSAGE') {
                 laggTillChatMeddelande("System", data.text, true);
+            } else if (data.type === 'PLAYER_LEFT_GAME') {
+                hanteraSpelareLamnade(data.playerName, data.playerId);
+                if (isHost) {
+                    connections.forEach(c => {
+                        if (c !== conn) c.send(data);
+                    });
+                }
+            } else if (data.type === 'RETURN_TO_LOBBY') {
+                atergaTillLobbyLokal();
             } else if (data.type === 'GAME_START') {
                 document.getElementById('setup-modal').style.display = 'none';
+                document.getElementById('winner-modal').style.display = 'none';
                 document.getElementById('game-chat-section').style.display = 'flex';
+                document.getElementById('leave-game-btn').style.display = 'inline-block';
+                gameMode = data.gameMode;
+                blitzTimeLimit = data.blitzTimeLimit;
                 gameState = data.gameState;
+                startaBlitzTimerOmKrävs();
                 uppdateraUI();
                 visaToast("Spelet har startat!");
             } else if (data.type === 'GAME_STATE_UPDATE') {
                 gameState = data.gameState;
                 if (gameState.gameOver) {
                     visaVinnarModal();
+                } else {
+                    startaBlitzTimerOmKrävs();
                 }
                 uppdateraUI();
             } else if (data.type === 'ACTION_PLAY_CENTER' && isHost) {
@@ -1272,11 +1499,12 @@
         function startaOnlineSpelHost() {
             if (!isHost || connectedPlayersList.length < 2) return;
 
+            gameMode = document.getElementById('online-game-mode').value;
+            blitzTimeLimit = parseInt(document.getElementById('online-blitz-time').value);
+
             let val = document.getElementById('online-stock-size').value;
             let stockSize = val === 'debug' ? 2 : parseInt(val);
             let antalSpelare = connectedPlayersList.length;
-            
-            // Om 5-8 spelare dubblas den gemensamma kortleken (multiplikator 2)
             let kortleksMultiplikator = antalSpelare >= 5 ? 2 : 1;
 
             gameState.numPlayers = antalSpelare;
@@ -1307,7 +1535,16 @@
 
             document.getElementById('setup-modal').style.display = 'none';
             document.getElementById('game-chat-section').style.display = 'flex';
-            connections.forEach(c => c.send({ type: 'GAME_START', gameState }));
+            document.getElementById('leave-game-btn').style.display = 'inline-block';
+            
+            startaBlitzTimerOmKrävs();
+
+            connections.forEach(c => c.send({ 
+                type: 'GAME_START', 
+                gameState, 
+                gameMode, 
+                blitzTimeLimit 
+            }));
             uppdateraUI();
             visaToast("Spelet startar!");
         }
@@ -1392,6 +1629,9 @@
             let menuBtn = document.getElementById('in-game-menu-btn');
             menuBtn.style.display = gameState.gameOver ? 'inline-block' : 'none';
 
+            let leaveBtn = document.getElementById('leave-game-btn');
+            leaveBtn.style.display = spellage === 'online' && !gameState.gameOver ? 'inline-block' : 'none';
+
             let user = gameState.players[myPlayerId] || { name: 'Du', stock: [], discards: [[],[],[],[]], hand: [] };
             document.getElementById('local-player-name').textContent = 'Din Spelplan (' + user.name + ')';
 
@@ -1404,11 +1644,13 @@
                 turnBannerBox.classList.remove('is-my-turn');
                 document.getElementById('local-player-section').classList.remove('active-player-board');
             } else if (isMyTurn) {
-                turnBannerBox.textContent = '⭐ DIN TUR! (Omgång ' + gameState.currentRound + ') - Spela ut kort eller lägg ett kort på din slänghög för att avsluta.';
+                let blitzSuffix = (gameMode === 'blitz') ? ` [Blitz: ${blitzTimeRemaining}s]` : '';
+                turnBannerBox.textContent = `⭐ DIN TUR! (Omgång ${gameState.currentRound})${blitzSuffix} - Spela ut kort eller lägg ett kort på din slänghög.`;
                 turnBannerBox.classList.add('is-my-turn');
                 document.getElementById('local-player-section').classList.add('active-player-board');
             } else {
-                turnBannerBox.textContent = '⏳ VÄNTAR PÅ TUR: Det är ' + (activePlayer ? activePlayer.name : 'en annan spelare') + 's tur just nu.';
+                let blitzSuffix = (gameMode === 'blitz') ? ` [Blitz: ${blitzTimeRemaining}s]` : '';
+                turnBannerBox.textContent = `⏳ VÄNTAR PÅ TUR: Det är ${activePlayer ? activePlayer.name : 'en annan spelare'}s tur.${blitzSuffix}`;
                 turnBannerBox.classList.remove('is-my-turn');
                 document.getElementById('local-player-section').classList.remove('active-player-board');
             }
