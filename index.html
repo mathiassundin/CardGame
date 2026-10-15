@@ -82,7 +82,7 @@
             border: 2px solid #334155;
             padding: 1.5rem;
             border-radius: 16px;
-            max-width: 460px;
+            max-width: 480px;
             width: 100%;
             text-align: center;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
@@ -385,7 +385,7 @@
         .stats-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-align: left;
             margin-top: 0.5rem;
             background: #0f172a;
@@ -394,7 +394,7 @@
         }
 
         .stats-table th, .stats-table td {
-            padding: 0.5rem;
+            padding: 0.4rem;
             border-bottom: 1px solid #334155;
         }
 
@@ -519,11 +519,19 @@
                 </div>
             </details>
 
+            <!-- Information om mobila enheter -->
+            <details style="text-align: left; margin-bottom: 0.75rem; background: #0f172a; border-color: #334155;">
+                <summary style="font-size: 0.8rem; color: #f59e0b;">📱 Viktig info om mobila enheter</summary>
+                <div style="padding-top: 0.4rem; font-size: 0.75rem; color: #94a3b8; line-height: 1.3;">
+                    Online Multiplayer fungerar för stunden <strong>inte optimalt på mobila enheter</strong> (på grund av mobila nätverksbrandväggar och NAT-begränsningar). Vi rekommenderar att ni spelar på datorer via fast nätverk eller Wi-Fi.
+                </div>
+            </details>
+
             <div id="setup-view-mode">
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
                 <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                    <button class="btn" style="background: #2563eb; font-size: 1rem; padding: 0.8rem;" onclick="visaSingleSetup()">🤖 Single Player (mot botar)</button>
-                    <button class="btn" style="background: #0d9488; font-size: 1rem; padding: 0.8rem;" onclick="visaOnlineSetup()">🌐 Online Multiplayer (2-8 spelare)</button>
+                    <button class="btn" style="background: #2563eb; font-size: 1rem; padding: 0.8rem;" onclick="showSingleSetup()">🤖 Single Player (mot botar)</button>
+                    <button class="btn" style="background: #0d9488; font-size: 1rem; padding: 0.8rem;" onclick="showOnlineSetup()">🌐 Online Multiplayer (2-8 spelare)</button>
                 </div>
             </div>
 
@@ -531,7 +539,7 @@
                 <h3 style="color: #38bdf8; margin-bottom: 0.75rem; font-size: 1.1rem;">Single Player</h3>
                 
                 <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Spelläge:</label>
-                <select id="single-game-mode" onchange="andraSinglelageVal()">
+                <select id="single-game-mode" onchange="onChangeSingleMode()">
                     <option value="standard">Standard</option>
                     <option value="blitz">Blitz (Tidsbegränsad tur)</option>
                 </select>
@@ -554,8 +562,8 @@
                     <option value="debug">🛠️ Debug-läge (2 kort i stocken)</option>
                 </select>
                 <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                    <button class="btn" style="background: #334155; flex: 1;" onclick="visaHuvudmeny()">Tillbaka</button>
-                    <button class="btn" style="flex: 2;" onclick="startaSpel()">Starta Spel 🚀</button>
+                    <button class="btn" style="background: #334155; flex: 1;" onclick="showMainMenu()">Tillbaka</button>
+                    <button class="btn" style="flex: 2;" onclick="startGame()">Starta Spel 🚀</button>
                 </div>
             </div>
 
@@ -568,9 +576,9 @@
                     <input type="text" id="online-nickname" placeholder="Ange ditt namn" value="">
                     
                     <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top: 0.5rem;">
-                        <button id="btn-create-room" class="btn" style="background: #2563eb;" onclick="valjOnlineHandling('skapa')">Skapa rum</button>
-                        <button id="btn-join-room" class="btn" style="background: #16a34a;" onclick="valjOnlineHandling('gamed')">Gå med i rum</button>
-                        <button class="btn" style="background: #334155;" onclick="visaHuvudmeny()">Tillbaka till huvudmeny 🏠</button>
+                        <button id="btn-create-room" class="btn" style="background: #2563eb;" onclick="handleOnlineAction('create')">Skapa rum</button>
+                        <button id="btn-join-room" class="btn" style="background: #16a34a;" onclick="handleOnlineAction('join')">Gå med i rum</button>
+                        <button class="btn" style="background: #334155;" onclick="showMainMenu()">Tillbaka till huvudmeny 🏠</button>
                     </div>
                 </div>
 
@@ -578,8 +586,8 @@
                     <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Rumskod (5 tecken):</label>
                     <input type="text" id="online-room-id" placeholder="t.ex. GV7F3" maxlength="5" style="text-transform: uppercase;">
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn" style="background: #334155; flex: 1;" onclick="tillbakaTillOnlineSteg1()">Tillbaka</button>
-                        <button id="btn-submit-join" class="btn" style="flex: 2; background:#16a34a;" onclick="anslutTillRum()">Anslut till rum 🚪</button>
+                        <button class="btn" style="background: #334155; flex: 1;" onclick="backToOnlineStep1()">Tillbaka</button>
+                        <button id="btn-submit-join" class="btn" style="flex: 2; background:#16a34a;" onclick="connectToRoom()">Anslut till rum 🚪</button>
                     </div>
                 </div>
 
@@ -598,25 +606,25 @@
                         
                         <div class="copy-button-container">
                             <span id="copy-code-notice" class="copy-notice-overlay">Du har kopierat kod</span>
-                            <button class="btn" style="padding:0.4rem 0.6rem; background:#334155; font-size:0.8rem;" onclick="kopieraRumskod()">Kod 📋</button>
+                            <button class="btn" style="padding:0.4rem 0.6rem; background:#334155; font-size:0.8rem;" onclick="copyRoomCode()">Kod 📋</button>
                         </div>
                         
                         <div class="copy-button-container">
                             <span id="copy-link-notice" class="copy-notice-overlay">Du har kopierat länken</span>
-                            <button class="btn" style="padding:0.4rem 0.6rem; background:#0d9488; font-size:0.8rem;" onclick="kopieraRumsLank()">Länk 🔗</button>
+                            <button class="btn" style="padding:0.4rem 0.6rem; background:#0d9488; font-size:0.8rem;" onclick="copyRoomLink()">Länk 🔗</button>
                         </div>
                     </div>
 
                     <div id="host-controls">
                         <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Spelläge (Admin):</label>
-                        <select id="online-game-mode" onchange="andraOnlineLobbyVal()">
+                        <select id="online-game-mode" onchange="onChangeOnlineLobby()">
                             <option value="standard">Standard</option>
                             <option value="blitz">Blitz (Tidsbegränsad tur)</option>
                         </select>
 
                         <div id="online-blitz-container" style="display: none; margin-bottom: 0.5rem;">
                             <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Blitz-tid per tur:</label>
-                            <select id="online-blitz-time" onchange="andraOnlineLobbyVal()">
+                            <select id="online-blitz-time" onchange="onChangeOnlineLobby()">
                                 <option value="10">10 sekunder</option>
                                 <option value="15">15 sekunder</option>
                                 <option value="20" selected>20 sekunder</option>
@@ -625,7 +633,7 @@
                         </div>
 
                         <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Storlek på starthög:</label>
-                        <select id="online-stock-size" onchange="andraOnlineLobbyVal()">
+                        <select id="online-stock-size" onchange="onChangeOnlineLobby()">
                             <option value="20">20 kort i stocken</option>
                             <option value="16">16 kort i stocken</option>
                             <option value="12">12 kort i stocken</option>
@@ -645,25 +653,25 @@
 
                     <!-- Statistik-knapp under spellistan -->
                     <div style="margin-bottom: 0.75rem;">
-                        <button class="btn" style="width: 100%; background: #475569; font-size: 0.9rem;" onclick="oppnaStatistikModal()">📊 Spelarstatistik</button>
+                        <button class="btn" style="width: 100%; background: #475569; font-size: 0.9rem;" onclick="openStatsModal()">📊 Spelarstatistik</button>
                     </div>
 
                     <div id="ready-button-container" style="margin-bottom: 0.75rem; display: none;">
-                        <button id="toggle-ready-btn" class="btn" style="width: 100%; background: #16a34a; font-size: 1rem;" onclick="markeraMigSomRedo()">Jag är REDO 👍</button>
+                        <button id="toggle-ready-btn" class="btn" style="width: 100%; background: #16a34a; font-size: 1rem;" onclick="toggleReadyStatus()">Jag är REDO 👍</button>
                     </div>
 
                     <section class="chat-section" id="lobby-chat-section" style="margin-top:0.5rem; margin-bottom:0.75rem;">
                         <h3 style="font-size: 0.85rem; color: #38bdf8; text-align: left;">Lobbychat</h3>
                         <div id="chat-messages" class="chat-messages"></div>
                         <div class="chat-input-row" style="margin-top:0.3rem;">
-                            <input type="text" id="chat-input" placeholder="Skriv meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') skickaChatMeddelande();">
-                            <button class="btn" style="padding: 0.3rem 0.6rem; font-size:0.8rem;" onclick="skickaChatMeddelande()">Skicka</button>
+                            <input type="text" id="chat-input" placeholder="Skriv meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') sendChatMessage();">
+                            <button class="btn" style="padding: 0.3rem 0.6rem; font-size:0.8rem;" onclick="sendChatMessage()">Skicka</button>
                         </div>
                     </section>
 
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn" style="background: #334155; flex: 1;" onclick="visaHuvudmeny()">Avbryt</button>
-                        <button id="start-online-game-btn" class="btn" style="flex: 2;" onclick="startaOnlineSpelHost()" disabled>Starta Spel 🚀</button>
+                        <button class="btn" style="background: #334155; flex: 1;" onclick="showMainMenu()">Avbryt</button>
+                        <button id="start-online-game-btn" class="btn" style="flex: 2;" onclick="startOnlineGameHost()" disabled>Starta Spel 🚀</button>
                     </div>
                 </div>
 
@@ -677,7 +685,7 @@
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                 <h2 style="margin: 0; font-size: 1.2rem;">📊 Rumsstatistik</h2>
-                <button class="btn" style="background: #334155; padding: 0.2rem 0.6rem; font-size: 0.8rem; min-height: auto;" onclick="stangStatistikModal()">✕</button>
+                <button class="btn" style="background: #334155; padding: 0.2rem 0.6rem; font-size: 0.8rem; min-height: auto;" onclick="closeStatsModal()">✕</button>
             </div>
             <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.75rem; text-align: left;">Statistik för alla spelare som varit med i detta rum (klicka på rubrikerna för att sortera):</p>
             
@@ -685,10 +693,12 @@
                 <table class="stats-table">
                     <thead>
                         <tr>
-                            <th onclick="sorteraStatistik('name')">Spelare ↕</th>
-                            <th onclick="sorteraStatistik('matches')">Antal matcher ↕</th>
-                            <th onclick="sorteraStatistik('wins')">Vinster ↕</th>
-                            <th onclick="sorteraStatistik('losses')">Förluster ↕</th>
+                            <th onclick="sortStats('name')">Spelare ↕</th>
+                            <th onclick="sortStats('matches')">Matcher ↕</th>
+                            <th onclick="sortStats('wins')">Vinster ↕</th>
+                            <th onclick="sortStats('losses')">Förluster ↕</th>
+                            <th onclick="sortStats('winRate')">% V ↕</th>
+                            <th onclick="sortStats('lossRate')">% F ↕</th>
                         </tr>
                     </thead>
                     <tbody id="stats-table-body">
@@ -698,7 +708,7 @@
             </div>
 
             <div style="margin-top: 1rem;">
-                <button class="btn" style="width: 100%; background: #2563eb;" onclick="stangStatistikModal()">Tillbaka till lobbyn 🏠</button>
+                <button class="btn" style="width: 100%; background: #2563eb;" onclick="closeStatsModal()">Tillbaka till lobbyn 🏠</button>
             </div>
         </div>
     </div>
@@ -709,7 +719,7 @@
             <h2 id="winner-title">🏆 Vinnare!</h2>
             <p id="winner-text" style="margin-bottom: 1.5rem; font-size: 1.1rem;"></p>
             <div style="display: flex; flex-direction: column; gap: 0.6rem;" id="winner-modal-buttons">
-                <button class="btn" style="background: #2563eb;" onclick="atergaTillLobbyFranVinst()">Tillbaka till Lobby 🏠</button>
+                <button class="btn" style="background: #2563eb;" onclick="returnToLobbyFromWin()">Tillbaka till Lobby 🏠</button>
             </div>
         </div>
     </div>
@@ -737,8 +747,8 @@
                 <span id="deck-count">Draghög: 162</span>
                 <span id="recycle-count" style="color: #94a3b8;">Kasserade: 0</span>
                 <div style="display:flex; gap:0.4rem;">
-                    <button id="leave-game-btn" class="btn" style="padding: 0.2rem 0.6rem; min-height: 32px; font-size: 0.8rem; background: #b91c1c; display: none;" onclick="bekraftaLamnaSpel()">Lämna</button>
-                    <button id="in-game-menu-btn" class="btn" style="padding: 0.2rem 0.6rem; min-height: 32px; font-size: 0.8rem; display: none;" onclick="oppnaSetup()">Meny</button>
+                    <button id="leave-game-btn" class="btn" style="padding: 0.2rem 0.6rem; min-height: 32px; font-size: 0.8rem; background: #b91c1c; display: none;" onclick="confirmLeaveGame()">Lämna</button>
+                    <button id="in-game-menu-btn" class="btn" style="padding: 0.2rem 0.6rem; min-height: 32px; font-size: 0.8rem; display: none;" onclick="openSetup()">Meny</button>
                 </div>
             </div>
             <div class="center-piles" id="center-piles-container"></div>
@@ -754,7 +764,7 @@
                 <div class="sub-group">
                     <h3>Min spelhög</h3>
                     <div style="display: flex; gap: 1rem; align-items: center;">
-                        <div id="player-stock-top" class="card empty-slot" onclick="valjKort('stock', 0)">Inget</div>
+                        <div id="player-stock-top" class="card empty-slot" onclick="selectCard('stock', 0)">Inget</div>
                         <div style="font-size: 0.75rem; color: #94a3b8;">Klicka för att spela kortet från stocken.</div>
                     </div>
                 </div>
@@ -775,8 +785,8 @@
             <h3 style="font-size: 0.9rem; color: #38bdf8; text-align: left;">Lobbychat</h3>
             <div id="game-chat-messages" class="chat-messages"></div>
             <div class="chat-input-row" style="margin-top:0.3rem;">
-                <input type="text" id="game-chat-input" placeholder="Skriv ett meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') skickaChatMeddelande();">
-                <button class="btn" style="padding: 0.4rem 0.8rem;" onclick="skickaChatMeddelande()">Skicka</button>
+                <input type="text" id="game-chat-input" placeholder="Skriv ett meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') sendChatMessage();">
+                <button class="btn" style="padding: 0.4rem 0.8rem;" onclick="sendChatMessage()">Skicka</button>
             </div>
         </section>
     </main>
@@ -785,22 +795,22 @@
         const BOT_NAMES = ["Gregor", "Astrid", "Karin", "Lars", "Sven", "Elin", "Maja", "Olof"];
         const PLAYER_COLORS = ["#38bdf8", "#4ade80", "#f59e0b", "#f43f5e", "#a855f7", "#06b6d4", "#ec4899", "#84cc16"];
         
-        let spellage = 'single';
+        let gameType = 'single';
         let peer = null;
         let isHost = false;
         let myPlayerId = 0;
         let connections = [];
         let hostConnection = null;
         let connectedPlayersList = [];
-        let senasteDragInfo = null;
+        let latestMoveInfo = null;
         let currentRoomId = '';
         let hasLeftGame = false;
         let isMyReadyStatus = false;
 
-        let rumsStatistik = {}; // Spelarnamn -> { matches, wins, losses }
-        let rumSpelareKronologisk = []; // Håller reda på anslutningsordning
-        let aktuellSorteringKolumn = null;
-        let aktuellSorteringStigande = true;
+        let roomStats = {}; 
+        let roomPlayersChronological = []; 
+        let currentSortColumn = null;
+        let currentSortAscending = true;
 
         let gameMode = 'standard';
         let blitzTimeLimit = 20;
@@ -820,13 +830,13 @@
             winnerName: null
         };
 
-        function genereraKortKod() {
-            const tecken = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Utelämnat förvirrande tecken som O, 0, I, 1
-            let kod = "";
+        function generateRoomCode() {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; 
+            let code = "";
             for (let i = 0; i < 5; i++) {
-                kod += tecken.charAt(Math.floor(Math.random() * tecken.length));
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
             }
-            return kod;
+            return code;
         }
 
         function getTimestamp() {
@@ -836,16 +846,16 @@
             return `${hh}:${mm}`;
         }
 
-        function andraSinglelageVal() {
+        function onChangeSingleMode() {
             let mode = document.getElementById('single-game-mode').value;
             document.getElementById('single-blitz-container').style.display = (mode === 'blitz') ? 'block' : 'none';
         }
 
-        function andraOnlineLobbyVal() {
+        function onChangeOnlineLobby() {
             let mode = document.getElementById('online-game-mode').value;
             document.getElementById('online-blitz-container').style.display = (mode === 'blitz') ? 'block' : 'none';
 
-            if (isHost && spellage === 'online') {
+            if (isHost && gameType === 'online') {
                 let currentMode = document.getElementById('online-game-mode').value;
                 let currentBlitzTime = parseInt(document.getElementById('online-blitz-time').value);
                 let currentStockSize = document.getElementById('online-stock-size').value;
@@ -863,7 +873,7 @@
             }
         }
 
-        function uppdateraGastInstallningarUI(gMode, bTime, sSize) {
+        function updateGuestSettingsUI(gMode, bTime, sSize) {
             let modeText = gMode === 'blitz' ? 'Blitz (Tidsbegränsad)' : 'Standard';
             document.getElementById('guest-view-mode').textContent = modeText;
             
@@ -879,8 +889,8 @@
             document.getElementById('guest-view-stock').textContent = stockText;
         }
 
-        function oppnaSetup() {
-            stoppaBlitzTimer();
+        function openSetup() {
+            stopBlitzTimer();
             hasLeftGame = false;
             document.getElementById('winner-modal').style.display = 'none';
             document.getElementById('stats-modal').style.display = 'none';
@@ -892,7 +902,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const roomParam = urlParams.get('room');
             if (roomParam) {
-                visaOnlineSetup();
+                showOnlineSetup();
                 document.getElementById('online-step-1').style.display = 'block';
                 document.getElementById('online-step-join').style.display = 'none';
                 document.getElementById('online-room-id').value = roomParam;
@@ -902,30 +912,30 @@
                 let btnGamed = document.getElementById('btn-join-room');
                 if (btnGamed) {
                     btnGamed.textContent = "Anslut till rum 🚪";
-                    btnGamed.onclick = () => anslutMedLänkDirekt(roomParam);
+                    btnGamed.onclick = () => connectWithLinkDirect(roomParam);
                 }
             } else {
-                visaHuvudmeny();
+                showMainMenu();
             }
         }
 
-        function anslutMedLänkDirekt(roomParam) {
+        function connectWithLinkDirect(roomParam) {
             let nick = document.getElementById('online-nickname').value.trim();
             if (!nick) {
                 document.getElementById('online-status').textContent = "Vänligen ange ditt spelarnamn först!";
                 return;
             }
             document.getElementById('online-room-id').value = roomParam.toUpperCase();
-            anslutTillRum();
+            connectToRoom();
         }
 
-        function visaHuvudmeny() {
-            spellage = 'single';
-            stoppaBlitzTimer();
+        function showMainMenu() {
+            gameType = 'single';
+            stopBlitzTimer();
             hasLeftGame = false;
             isMyReadyStatus = false;
-            rumsStatistik = {};
-            rumSpelareKronologisk = [];
+            roomStats = {};
+            roomPlayersChronological = [];
             
             if (window.history.replaceState) {
                 window.history.replaceState(null, null, window.location.pathname);
@@ -944,7 +954,7 @@
             let btnGamed = document.getElementById('btn-join-room');
             if (btnGamed) {
                 btnGamed.textContent = "Gå med i rum";
-                btnGamed.onclick = () => valjOnlineHandling('gamed');
+                btnGamed.onclick = () => handleOnlineAction('join');
             }
 
             if (hostConnection) {
@@ -961,14 +971,14 @@
             currentRoomId = '';
         }
 
-        function visaSingleSetup() {
-            spellage = 'single';
+        function showSingleSetup() {
+            gameType = 'single';
             document.getElementById('setup-view-mode').style.display = 'none';
             document.getElementById('setup-view-single').style.display = 'block';
         }
 
-        function visaOnlineSetup() {
-            spellage = 'online';
+        function showOnlineSetup() {
+            gameType = 'online';
             document.getElementById('setup-view-mode').style.display = 'none';
             document.getElementById('setup-view-online').style.display = 'block';
             document.getElementById('online-step-1').style.display = 'block';
@@ -976,30 +986,30 @@
             document.getElementById('online-lobby-view').style.display = 'none';
         }
 
-        function valjOnlineHandling(handling) {
+        function handleOnlineAction(action) {
             let nick = document.getElementById('online-nickname').value.trim();
             if (!nick) {
                 document.getElementById('online-status').textContent = "Vänligen ange ett spelarnamn först!";
                 return;
             }
             document.getElementById('online-status').textContent = "";
-            if (handling === 'skapa') {
-                skapaOnlineRum();
-            } else if (handling === 'gamed') {
+            if (action === 'create') {
+                createOnlineRoom();
+            } else if (action === 'join') {
                 document.getElementById('online-step-1').style.display = 'none';
                 document.getElementById('online-step-join').style.display = 'block';
             }
         }
 
-        function tillbakaTillOnlineSteg1() {
+        function backToOnlineStep1() {
             document.getElementById('online-step-join').style.display = 'none';
             document.getElementById('online-step-1').style.display = 'block';
             document.getElementById('online-status').textContent = "";
         }
 
-        function laddaLokalStatistikForSpelare(namn) {
+        function loadLocalPlayerStats(name) {
             try {
-                let data = localStorage.getItem('cardgame_stats_' + namn);
+                let data = localStorage.getItem('cardgame_stats_' + name);
                 if (data) {
                     return JSON.parse(data);
                 }
@@ -1007,164 +1017,167 @@
             return { matches: 0, wins: 0, losses: 0 };
         }
 
-        function sparaLokalStatistikForSpelare(namn, stats) {
+        function saveLocalPlayerStats(name, stats) {
             try {
-                localStorage.setItem('cardgame_stats_' + namn, JSON.stringify(stats));
+                localStorage.setItem('cardgame_stats_' + name, JSON.stringify(stats));
             } catch(e) {}
         }
 
-        function registreraSpelSlutStatistik(vinnarNamn) {
+        function registerGameEndStats(winnerName) {
             if (!gameState.players) return;
 
-            // I online-läge ska endast hosten beräkna och ansvara för rummets statistik
-            if (spellage === 'online' && !isHost) return;
+            if (gameType === 'online' && !isHost) return;
 
             gameState.players.forEach(p => {
                 if (!p || p.isLeft) return;
-                let namn = p.name;
+                let name = p.name;
                 
-                if (!rumsStatistik[namn]) {
-                    rumsStatistik[namn] = spellage === 'online' ? { matches: 0, wins: 0, losses: 0 } : laddaLokalStatistikForSpelare(namn);
+                if (!roomStats[name]) {
+                    roomStats[name] = gameType === 'online' ? { matches: 0, wins: 0, losses: 0 } : loadLocalPlayerStats(name);
                 }
                 
-                rumsStatistik[namn].matches++;
-                if (namn === vinnarNamn) {
-                    rumsStatistik[namn].wins++;
+                roomStats[name].matches++;
+                if (name === winnerName) {
+                    roomStats[name].wins++;
                 } else {
-                    rumsStatistik[namn].losses++;
+                    roomStats[name].losses++;
                 }
 
-                if (spellage !== 'online') {
-                    sparaLokalStatistikForSpelare(namn, rumsStatistik[namn]);
+                if (gameType !== 'online') {
+                    saveLocalPlayerStats(name, roomStats[name]);
                 }
             });
 
-            if (isHost && spellage === 'online') {
+            if (isHost && gameType === 'online') {
                 broadcastStatsSync();
             }
         }
 
         function broadcastStatsSync() {
             connections.forEach(c => {
-                try { c.send({ type: 'SYNC_STATS', stats: rumsStatistik, kronologisk: rumSpelareKronologisk }); } catch(e){}
+                try { c.send({ type: 'SYNC_STATS', stats: roomStats, chronological: roomPlayersChronological }); } catch(e){}
             });
         }
 
-        function oppnaStatistikModal() {
-            uppdateraStatistikTabell();
+        function openStatsModal() {
+            updateStatsTable();
             document.getElementById('stats-modal').style.display = 'flex';
         }
 
-        function stangStatistikModal() {
+        function closeStatsModal() {
             document.getElementById('stats-modal').style.display = 'none';
         }
 
-        function sorteraStatistik(kolumn) {
-            if (aktuellSorteringKolumn === kolumn) {
-                aktuellSorteringStigande = !aktuellSorteringStigande;
+        function sortStats(column) {
+            if (currentSortColumn === column) {
+                currentSortAscending = !currentSortAscending;
             } else {
-                aktuellSorteringKolumn = kolumn;
-                aktuellSorteringStigande = true;
+                currentSortColumn = column;
+                currentSortAscending = true;
             }
-            uppdateraStatistikTabell();
+            updateStatsTable();
         }
 
-        function uppdateraStatistikTabell() {
+        function updateStatsTable() {
             let tbody = document.getElementById('stats-table-body');
             tbody.innerHTML = '';
 
-            let arrayAttSortera = rumSpelareKronologisk.map(namn => {
-                let st = rumsStatistik[namn] || { matches: 0, wins: 0, losses: 0 };
-                return { name: namn, ...st };
+            let sortableArray = roomPlayersChronological.map(name => {
+                let st = roomStats[name] || { matches: 0, wins: 0, losses: 0 };
+                let winRate = st.matches > 0 ? Math.round((st.wins / st.matches) * 100) : 0;
+                let lossRate = st.matches > 0 ? Math.round((st.losses / st.matches) * 100) : 0;
+                return { name, ...st, winRate, lossRate };
             });
 
-            if (aktuellSorteringKolumn) {
-                arrayAttSortera.sort((a, b) => {
-                    let valA = a[aktuellSorteringKolumn];
-                    let valB = b[aktuellSorteringKolumn];
+            if (currentSortColumn) {
+                sortableArray.sort((a, b) => {
+                    let valA = a[currentSortColumn];
+                    let valB = b[currentSortColumn];
                     if (typeof valA === 'string') {
-                        return aktuellSorteringStigande ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        return currentSortAscending ? valA.localeCompare(valB) : valB.localeCompare(valA);
                     } else {
-                        return aktuellSorteringStigande ? valA - valB : valB - valA;
+                        return currentSortAscending ? valA - valB : valB - valA;
                     }
                 });
             }
 
-            if (arrayAttSortera.length === 0) {
+            if (sortableArray.length === 0) {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan="4" style="text-align:center; color:#94a3b8;">Ingen statistik registrerad ännu.</td>`;
+                tr.innerHTML = `<td colspan="6" style="text-align:center; color:#94a3b8;">Ingen statistik registrerad ännu.</td>`;
                 tbody.appendChild(tr);
                 return;
             }
 
-            arrayAttSortera.forEach(item => {
+            sortableArray.forEach(item => {
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="font-weight:bold; color:#f8fafc;">${item.name}</td>
                     <td>${item.matches}</td>
                     <td style="color:#4ade80;">${item.wins}</td>
                     <td style="color:#f87171;">${item.losses}</td>
+                    <td style="color:#38bdf8;">${item.winRate}%</td>
+                    <td style="color:#f43f5e;">${item.lossRate}%</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        function slumpaNamn(antal) {
-            let kopia = [...BOT_NAMES];
-            for (let i = kopia.length - 1; i > 0; i--) {
+        function shuffleNames(count) {
+            let copy = [...BOT_NAMES];
+            for (let i = copy.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [kopia[i], kopia[j]] = [kopia[j], kopia[i]];
+                [copy[i], copy[j]] = [copy[j], copy[i]];
             }
-            return kopia.slice(0, antal).map(n => `${n}(bot)`);
+            return copy.slice(0, count).map(n => `${n}(bot)`);
         }
 
-        function skapaKortlek(multiplikator = 1) {
-            let lek = [];
-            for (let m = 0; m < multiplikator; m++) {
+        function createDeck(multiplier = 1) {
+            let deck = [];
+            for (let m = 0; m < multiplier; m++) {
                 for (let v = 1; v <= 12; v++) {
-                    for (let i = 0; i < 12; i++) lek.push({ type: 'number', value: v });
+                    for (let i = 0; i < 12; i++) deck.push({ type: 'number', value: v });
                 }
-                for (let i = 0; i < 18; i++) lek.push({ type: 'joker', value: 'JOKER' });
+                for (let i = 0; i < 18; i++) deck.push({ type: 'joker', value: 'JOKER' });
             }
-            return blandaleKortlek(lek);
+            return shuffleDeck(deck);
         }
 
-        function blandaleKortlek(lek) {
-            for (let i = lek.length - 1; i > 0; i--) {
+        function shuffleDeck(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [lek[i], lek[j]] = [lek[j], lek[i]];
+                [deck[i], deck[j]] = [deck[j], deck[i]];
             }
-            return lek;
+            return deck;
         }
 
-        function getCardClass(kort) {
-            if (!kort) return 'empty-slot';
-            if (kort.type === 'joker') return 'joker';
-            if (kort.value >= 1 && kort.value <= 5) return 'blue';
-            if (kort.value >= 6 && kort.value <= 8) return 'green';
-            if (kort.value >= 9 && kort.value <= 12) return 'red';
+        function getCardClass(card) {
+            if (!card) return 'empty-slot';
+            if (card.type === 'joker') return 'joker';
+            if (card.value >= 1 && card.value <= 5) return 'blue';
+            if (card.value >= 6 && card.value <= 8) return 'green';
+            if (card.value >= 9 && card.value <= 12) return 'red';
             return '';
         }
 
-        function renderCardHTML(kort, labelText = '') {
-            if (!kort) return `<span class="card-label">${labelText}</span><span style="font-size:0.7rem;">Tom</span>`;
-            if (kort.type === 'joker') {
-                let repValue = kort.använtVarde ? ` (${kort.använtVarde})` : '';
+        function renderCardHTML(card, labelText = '') {
+            if (!card) return `<span class="card-label">${labelText}</span><span style="font-size:0.7rem;">Tom</span>`;
+            if (card.type === 'joker') {
+                let repValue = card.använtVarde ? ` (${card.använtVarde})` : '';
                 return `
                     <span class="card-label">${labelText}</span>
                     <span class="card-value">J${repValue}</span>
                     <span class="joker-badge">JOKER</span>
                 `;
             }
-            return `<span class="card-label">${labelText}</span><span class="card-value">${kort.value}</span>`;
+            return `<span class="card-label">${labelText}</span><span class="card-value">${card.value}</span>`;
         }
 
-        function formateraKortText(k) {
+        function formatCardText(k) {
             if (!k) return '';
             return k.type === 'joker' ? 'J' : String(k.value);
         }
 
-        function startaSpel() {
+        function startGame() {
             hasLeftGame = false;
             document.getElementById('setup-modal').style.display = 'none';
             document.getElementById('stats-modal').style.display = 'none';
@@ -1174,121 +1187,121 @@
             blitzTimeLimit = parseInt(document.getElementById('single-blitz-time').value);
 
             let val = document.getElementById('single-player-count').value;
-            let antal = val === 'debug' ? 2 : parseInt(val);
-            let stockStorlek = val === 'debug' ? 2 : (antal === 2 ? 20 : (antal === 3 ? 16 : 12));
+            let count = val === 'debug' ? 2 : parseInt(val);
+            let stockSize = val === 'debug' ? 2 : (count === 2 ? 20 : (count === 3 ? 16 : 12));
 
-            gameState.numPlayers = antal;
+            gameState.numPlayers = count;
             gameState.gameOver = false;
             gameState.winnerName = null;
-            gameState.deck = skapaKortlek(1);
+            gameState.deck = createDeck(1);
             gameState.recycleDeck = [];
             gameState.centerPiles = [[], [], [], []];
             gameState.currentRound = 1;
             gameState.turnIndex = 0;
             gameState.selectedCard = null;
             myPlayerId = 0;
-            senasteDragInfo = null;
+            latestMoveInfo = null;
 
-            let botNamn = slumpaNamn(antal - 1);
+            let botNames = shuffleNames(count - 1);
 
-            rumSpelareKronologisk = ["Du", ...botNamn];
-            rumsStatistik = {};
-            rumSpelareKronologisk.forEach(n => {
-                rumsStatistik[n] = laddaLokalStatistikForSpelare(n);
+            roomPlayersChronological = ["Du", ...botNames];
+            roomStats = {};
+            roomPlayersChronological.forEach(n => {
+                roomStats[n] = loadLocalPlayerStats(n);
             });
 
             gameState.players = [{ name: "Du", isBot: false, stock: [], hand: [], discards: [[], [], [], []] }];
-            for (let i = 0; i < antal - 1; i++) {
-                gameState.players.push({ name: botNamn[i], isBot: true, stock: [], hand: [], discards: [[], [], [], []] });
+            for (let i = 0; i < count - 1; i++) {
+                gameState.players.push({ name: botNames[i], isBot: true, stock: [], hand: [], discards: [[], [], [], []] });
             }
 
             gameState.players.forEach(p => {
-                for (let i = 0; i < stockStorlek; i++) p.stock.push(gameState.deck.pop());
+                for (let i = 0; i < stockSize; i++) p.stock.push(gameState.deck.pop());
             });
 
-            fyllHand(0);
-            visaToast("Nytt spel startat! Din tur.");
-            startaBlitzTimerOmKrävs();
-            uppdateraUI();
+            fillHand(0);
+            showToast("Nytt spel startat! Din tur.");
+            startBlitzTimerIfNeeded();
+            updateUI();
         }
 
-        function visaToast(text) {
+        function showToast(text) {
             let el = document.getElementById('toast-banner');
             el.textContent = text;
             el.classList.add('show');
             setTimeout(() => el.classList.remove('show'), 1500);
         }
 
-        function fyllHand(pIdx) {
+        function fillHand(pIdx) {
             let p = gameState.players[pIdx];
             if (!p) return;
             while (p.hand.length < 5) {
                 if (gameState.deck.length === 0) {
                     if (gameState.recycleDeck.length > 0) {
-                        gameState.deck = blandaleKortlek([...gameState.recycleDeck]);
+                        gameState.deck = shuffleDeck([...gameState.recycleDeck]);
                         gameState.recycleDeck = [];
-                        meddela("Draghögen var tom! De kasserade korten blandades om.");
+                        setMessage("Draghögen var tom! De kasserade korten blandades om.");
                     } else break;
                 }
                 p.hand.push(gameState.deck.pop());
             }
         }
 
-        function meddela(text) {
+        function setMessage(text) {
             let banner = document.getElementById('turn-banner-box');
             if (banner && !gameState.gameOver) {
                 banner.textContent = text;
             }
         }
 
-        function valjKort(source, index) {
+        function selectCard(source, index) {
             if (hasLeftGame || gameState.turnIndex !== myPlayerId || gameState.gameOver) return;
             let p = gameState.players[myPlayerId];
-            let kort = null;
+            let card = null;
 
-            if (source === 'hand') kort = p.hand[index];
-            else if (source === 'stock' && p.stock.length > 0) kort = p.stock[p.stock.length - 1];
-            else if (source === 'discard' && p.discards[index].length > 0) kort = p.discards[index][p.discards[index].length - 1];
+            if (source === 'hand') card = p.hand[index];
+            else if (source === 'stock' && p.stock.length > 0) card = p.stock[p.stock.length - 1];
+            else if (source === 'discard' && p.discards[index].length > 0) card = p.discards[index][p.discards[index].length - 1];
 
-            if (kort) {
+            if (card) {
                 gameState.selectedCard = { source, index };
-                senasteDragInfo = { source, sourceIndex: index, player: myPlayerId };
-                let txt = kort.type === 'joker' ? 'Joker' : kort.value;
-                meddela(`⭐ DIN TUR! Valt kort: ${txt}. Klicka på en mitthög ELLER slänghög.`);
-                uppdateraUI();
+                latestMoveInfo = { source, sourceIndex: index, player: myPlayerId };
+                let txt = card.type === 'joker' ? 'Joker' : card.value;
+                setMessage(`⭐ DIN TUR! Valt kort: ${txt}. Klicka på en mitthög ELLER slänghög.`);
+                updateUI();
             }
         }
 
         function executePlayCard(pIdx, source, index, centerIndex) {
             let p = gameState.players[pIdx];
-            let kortAttLagga = null;
+            let cardToPlay = null;
 
-            if (source === 'hand') kortAttLagga = p.hand[index];
-            else if (source === 'stock') kortAttLagga = p.stock[p.stock.length - 1];
-            else if (source === 'discard') kortAttLagga = p.discards[index][p.discards[index].length - 1];
+            if (source === 'hand') cardToPlay = p.hand[index];
+            else if (source === 'stock') cardToPlay = p.stock[p.stock.length - 1];
+            else if (source === 'discard') cardToPlay = p.discards[index][p.discards[index].length - 1];
 
-            if (!kortAttLagga) return false;
+            if (!cardToPlay) return false;
 
-            let mitthog = gameState.centerPiles[centerIndex];
-            let toppVarde = mitthog.length > 0 ? (mitthog[mitthog.length - 1].type === 'joker' ? mitthog[mitthog.length - 1].använtVarde : mitthog[mitthog.length - 1].value) : 0;
-            let targetVal = toppVarde + 1;
+            let centerPile = gameState.centerPiles[centerIndex];
+            let topVal = centerPile.length > 0 ? (centerPile[centerPile.length - 1].type === 'joker' ? centerPile[centerPile.length - 1].använtVarde : centerPile[centerPile.length - 1].value) : 0;
+            let targetVal = topVal + 1;
 
-            if (kortAttLagga.type === 'joker' || kortAttLagga.value === targetVal) {
-                if (kortAttLagga.type === 'joker') kortAttLagga.använtVarde = targetVal;
+            if (cardToPlay.type === 'joker' || cardToPlay.value === targetVal) {
+                if (cardToPlay.type === 'joker') cardToPlay.använtVarde = targetVal;
 
                 if (source === 'hand') p.hand.splice(index, 1);
                 else if (source === 'stock') {
                     p.stock.pop();
                     if (p.stock.length === 0) {
-                        avslutaSpelMedVinnare(p.name);
+                        endGameWithWinner(p.name);
                         return true;
                     }
                 } else if (source === 'discard') {
                     p.discards[index].pop();
                 }
 
-                mitthog.push(kortAttLagga);
-                senasteDragInfo = {
+                centerPile.push(cardToPlay);
+                latestMoveInfo = {
                     sourceType: source,
                     sourceIdx: index,
                     player: pIdx,
@@ -1298,12 +1311,12 @@
                 gameState.selectedCard = null;
 
                 if (targetVal === 12) {
-                    gameState.recycleDeck.push(...mitthog);
+                    gameState.recycleDeck.push(...centerPile);
                     gameState.centerPiles[centerIndex] = [];
                 }
 
                 if (p.hand.length === 0 && source === 'hand') {
-                    fyllHand(pIdx);
+                    fillHand(pIdx);
                 }
                 return true;
             }
@@ -1314,9 +1327,9 @@
             let p = gameState.players[pIdx];
             if (!p || handIndex < 0 || handIndex >= p.hand.length) return false;
 
-            let avlagt = p.hand.splice(handIndex, 1)[0];
-            p.discards[discardIndex].push(avlagt);
-            senasteDragInfo = {
+            let discarded = p.hand.splice(handIndex, 1)[0];
+            p.discards[discardIndex].push(discarded);
+            latestMoveInfo = {
                 sourceType: 'hand',
                 sourceIdx: handIndex,
                 player: pIdx,
@@ -1325,12 +1338,12 @@
             };
             gameState.selectedCard = null;
 
-            nastaTur();
+            nextTurn();
             return true;
         }
 
-        function startaBlitzTimerOmKrävs() {
-            stoppaBlitzTimer();
+        function startBlitzTimerIfNeeded() {
+            stopBlitzTimer();
             if (gameMode !== 'blitz' || gameState.gameOver) return;
 
             blitzTimeRemaining = blitzTimeLimit;
@@ -1347,39 +1360,39 @@
                 }
 
                 if (blitzTimeRemaining <= 0) {
-                    stoppaBlitzTimer();
-                    if (spellage === 'single' || (spellage === 'online' && isHost)) {
-                        tvingaSlutBlixtTur();
+                    stopBlitzTimer();
+                    if (gameType === 'single' || (gameType === 'online' && isHost)) {
+                        forceEndBlitzTurn();
                     }
                 }
             }, 1000);
         }
 
-        function stoppaBlitzTimer() {
+        function stopBlitzTimer() {
             if (blitzTimerInterval) {
                 clearInterval(blitzTimerInterval);
                 blitzTimerInterval = null;
             }
         }
 
-        function tvingaSlutBlixtTur() {
+        function forceEndBlitzTurn() {
             if (gameState.gameOver) return;
             let p = gameState.players[gameState.turnIndex];
             if (p && p.hand && p.hand.length > 0) {
-                let avlagt = p.hand.splice(0, 1)[0];
-                p.discards[0].push(avlagt);
-                visaToast(`${p.name} fick tidsbrist i Blitz!`);
+                let discarded = p.hand.splice(0, 1)[0];
+                p.discards[0].push(discarded);
+                showToast(`${p.name} fick tidsbrist i Blitz!`);
             }
-            nastaTur();
-            if (spellage === 'online' && isHost) {
+            nextTurn();
+            if (gameType === 'online' && isHost) {
                 broadcastState();
             }
-            uppdateraUI();
+            updateUI();
         }
 
-        function nastaTur() {
+        function nextTurn() {
             if (gameState.gameOver) return;
-            stoppaBlitzTimer();
+            stopBlitzTimer();
 
             let loops = 0;
             do {
@@ -1395,37 +1408,37 @@
             if (gameState.turnIndex === 0) {
                 gameState.currentRound++;
             }
-            fyllHand(gameState.turnIndex);
+            fillHand(gameState.turnIndex);
 
-            startaBlitzTimerOmKrävs();
+            startBlitzTimerIfNeeded();
 
             let currentP = gameState.players[gameState.turnIndex];
             if (currentP && currentP.isBot) {
-                visaToast(`${currentP.name}s tur`);
-                setTimeout(koraBotTur, 1000);
+                showToast(`${currentP.name}s tur`);
+                setTimeout(runBotTurn, 1000);
             } else if (currentP) {
                 if (gameState.turnIndex === myPlayerId) {
-                    visaToast("Din tur!");
+                    showToast("Din tur!");
                 } else {
-                    visaToast(`${currentP.name}s tur`);
+                    showToast(`${currentP.name}s tur`);
                 }
             }
         }
 
-        function klickaEgenSlanghog(discardIndex) {
+        function clickOwnDiscard(discardIndex) {
             if (hasLeftGame || gameState.turnIndex !== myPlayerId || gameState.gameOver) return;
 
             if (gameState.selectedCard && gameState.selectedCard.source === 'hand') {
                 let handIdx = gameState.selectedCard.index;
 
-                if (spellage === 'single') {
+                if (gameType === 'single') {
                     executeDiscard(myPlayerId, handIdx, discardIndex);
-                    uppdateraUI();
-                } else if (spellage === 'online') {
+                    updateUI();
+                } else if (gameType === 'online') {
                     if (isHost) {
                         executeDiscard(myPlayerId, handIdx, discardIndex);
                         broadcastState();
-                        uppdateraUI();
+                        updateUI();
                     } else {
                         sendToHost({
                             type: 'ACTION_DISCARD',
@@ -1434,35 +1447,35 @@
                             discardIndex: discardIndex
                         });
                         gameState.selectedCard = null;
-                        uppdateraUI();
+                        updateUI();
                     }
                 }
             } else {
-                valjKort('discard', discardIndex);
+                selectCard('discard', discardIndex);
             }
         }
 
-        function spelaTillMitthog(centerIndex) {
+        function playToCenter(centerIndex) {
             if (hasLeftGame || gameState.turnIndex !== myPlayerId || !gameState.selectedCard || gameState.gameOver) return;
 
             let src = gameState.selectedCard.source;
             let idx = gameState.selectedCard.index;
 
-            if (spellage === 'single') {
+            if (gameType === 'single') {
                 let success = executePlayCard(myPlayerId, src, idx, centerIndex);
                 if (success) {
-                    if (!gameState.gameOver) uppdateraUI();
+                    if (!gameState.gameOver) updateUI();
                 } else {
-                    meddela("Ogiltigt drag! Följ nummerordningen (eller använd Joker).");
+                    setMessage("Ogiltigt drag! Följ nummerordningen (eller använd Joker).");
                 }
-            } else if (spellage === 'online') {
+            } else if (gameType === 'online') {
                 if (isHost) {
                     let success = executePlayCard(myPlayerId, src, idx, centerIndex);
                     if (success) {
                         broadcastState();
-                        if (!gameState.gameOver) uppdateraUI();
+                        if (!gameState.gameOver) updateUI();
                     } else {
-                        meddela("Ogiltigt drag! Följ nummerordningen (eller använd Joker).");
+                        setMessage("Ogiltigt drag! Följ nummerordningen (eller använd Joker).");
                     }
                 } else {
                     sendToHost({
@@ -1473,21 +1486,21 @@
                         centerIndex: centerIndex
                     });
                     gameState.selectedCard = null;
-                    uppdateraUI();
+                    updateUI();
                 }
             }
         }
 
-        function koraBotTur() {
+        function runBotTurn() {
             if (gameState.gameOver) return;
             let pIdx = gameState.turnIndex;
             let bot = gameState.players[pIdx];
             if (!bot || bot.isLeft) return;
-            fyllHand(pIdx);
+            fillHand(pIdx);
 
-            let harSpelat = true;
-            while (harSpelat) {
-                harSpelat = false;
+            let hasPlayed = true;
+            while (hasPlayed) {
+                hasPlayed = false;
 
                 if (bot.stock.length > 0) {
                     let topSt = bot.stock[bot.stock.length - 1];
@@ -1497,7 +1510,7 @@
                         if (topSt.type === 'joker' || topSt.value === tVal) {
                             if (topSt.type === 'joker') topSt.använtVarde = tVal;
                             mHog.push(bot.stock.pop());
-                            senasteDragInfo = {
+                            latestMoveInfo = {
                                 sourceType: 'stock',
                                 player: pIdx,
                                 targetType: 'center',
@@ -1507,27 +1520,27 @@
                                 gameState.recycleDeck.push(...mHog);
                                 gameState.centerPiles[c] = [];
                             }
-                            harSpelat = true;
+                            hasPlayed = true;
                             break;
                         }
                     }
                 }
 
                 if (bot.stock.length === 0) {
-                    avslutaSpelMedVinnare(bot.name);
+                    endGameWithWinner(bot.name);
                     return;
                 }
 
                 for (let i = 0; i < bot.hand.length; i++) {
-                    let hKort = bot.hand[i];
+                    let hCard = bot.hand[i];
                     for (let c = 0; c < 4; c++) {
                         let mHog = gameState.centerPiles[c];
                         let tVal = (mHog.length > 0 ? (mHog[mHog.length - 1].type === 'joker' ? mHog[mHog.length - 1].använtVarde : mHog[mHog.length - 1].value) : 0) + 1;
-                        if (hKort.type === 'joker' || hKort.value === tVal) {
-                            if (hKort.type === 'joker') hKort.använtVarde = tVal;
+                        if (hCard.type === 'joker' || hCard.value === tVal) {
+                            if (hCard.type === 'joker') hCard.använtVarde = tVal;
                             bot.hand.splice(i, 1);
-                            mHog.push(hKort);
-                            senasteDragInfo = {
+                            mHog.push(hCard);
+                            latestMoveInfo = {
                                 sourceType: 'hand',
                                 sourceIdx: i,
                                 player: pIdx,
@@ -1538,19 +1551,19 @@
                                 gameState.recycleDeck.push(...mHog);
                                 gameState.centerPiles[c] = [];
                             }
-                            harSpelat = true;
+                            hasPlayed = true;
                             break;
                         }
                     }
-                    if (harSpelat) break;
+                    if (hasPlayed) break;
                 }
             }
 
             if (bot.hand.length > 0) {
-                let slask = bot.hand.pop();
+                let discarded = bot.hand.pop();
                 let dIdx = Math.floor(Math.random() * 4);
-                bot.discards[dIdx].push(slask);
-                senasteDragInfo = {
+                bot.discards[dIdx].push(discarded);
+                latestMoveInfo = {
                     sourceType: 'hand',
                     player: pIdx,
                     targetType: 'discard',
@@ -1558,54 +1571,54 @@
                 };
             }
 
-            nastaTur();
-            uppdateraUI();
+            nextTurn();
+            updateUI();
         }
 
-        function avslutaSpelMedVinnare(vinnarNamn, customMessage = null) {
-            stoppaBlitzTimer();
+        function endGameWithWinner(winnerName, customMessage = null) {
+            stopBlitzTimer();
             gameState.gameOver = true;
-            gameState.winnerName = vinnarNamn;
+            gameState.winnerName = winnerName;
             if (customMessage) gameState.customWinMsg = customMessage;
             
-            registreraSpelSlutStatistik(vinnarNamn);
+            registerGameEndStats(winnerName);
 
-            if (spellage === 'online' && isHost) {
+            if (gameType === 'online' && isHost) {
                 broadcastState();
             }
-            visaVinnarModal();
+            showWinnerModal();
         }
 
-        function visaVinnarModal() {
+        function showWinnerModal() {
             let user = gameState.players[myPlayerId] || { name: '' };
-            let jagVann = gameState.winnerName === user.name;
+            let iWon = gameState.winnerName === user.name;
 
-            document.getElementById('winner-title').textContent = jagVann ? "🏆 GRATTIS! DU VANN!" : "💔 SPELET ÄR SLUT!";
+            document.getElementById('winner-title').textContent = iWon ? "🏆 GRATTIS! DU VANN!" : "💔 SPELET ÄR SLUT!";
             if (gameState.customWinMsg) {
                 document.getElementById('winner-text').textContent = gameState.customWinMsg;
             } else {
-                document.getElementById('winner-text').textContent = jagVann 
+                document.getElementById('winner-text').textContent = iWon 
                     ? "Du tömde din hög först och vann spelet!" 
                     : `${gameState.winnerName} tömde sin hög först och vann spelet. Bättre lycka nästa gång!`;
             }
 
             let modalButtons = document.getElementById('winner-modal-buttons');
-            if (spellage === 'online') {
-                modalButtons.innerHTML = `<button class="btn" style="background: #2563eb;" onclick="atergaTillLobbyFranVinst()">Tillbaka till Lobby 🏠</button>`;
+            if (gameType === 'online') {
+                modalButtons.innerHTML = `<button class="btn" style="background: #2563eb;" onclick="returnToLobbyFromWin()">Tillbaka till Lobby 🏠</button>`;
             } else {
-                modalButtons.innerHTML = `<button class="btn" style="background: #2563eb;" onclick="oppnaSetup()">Tillbaka till Huvudmeny 🏠</button>`;
+                modalButtons.innerHTML = `<button class="btn" style="background: #2563eb;" onclick="openSetup()">Tillbaka till Huvudmeny 🏠</button>`;
             }
 
             document.getElementById('winner-modal').style.display = 'flex';
         }
 
-        function bekraftaLamnaSpel() {
+        function confirmLeaveGame() {
             if (confirm("Vill du verkligen lämna spelet?")) {
-                lamnaSpelTillLobby();
+                leaveGameToLobby();
             }
         }
 
-        function lamnaSpelTillLobby() {
+        function leaveGameToLobby() {
             hasLeftGame = true;
             let myUser = gameState.players[myPlayerId];
             let myName = myUser ? myUser.name : "En spelare";
@@ -1613,23 +1626,23 @@
             document.getElementById('game-chat-section').style.display = 'none';
             document.getElementById('leave-game-btn').style.display = 'none';
 
-            if (spellage === 'online') {
+            if (gameType === 'online') {
                 let msgPayload = { type: 'PLAYER_LEFT_GAME', playerName: myName, playerId: myPlayerId };
                 if (isHost) {
                     connections.forEach(c => c.send({ type: 'HOST_LEFT' }));
-                    visaHuvudmeny();
+                    showMainMenu();
                 } else if (hostConnection) {
                     hostConnection.send(msgPayload);
-                    visaHuvudmeny();
+                    showMainMenu();
                 }
             } else {
-                oppnaSetup();
+                openSetup();
             }
         }
 
-        function hanteraSpelareLamnade(playerName, playerId) {
+        function handlePlayerLeft(playerName, playerId) {
             let p = gameState.players[playerId];
-            let varDetDenSpelarensTur = (gameState.turnIndex === playerId);
+            let wasThatPlayersTurn = (gameState.turnIndex === playerId);
 
             if (p) {
                 p.isLeft = true;
@@ -1643,26 +1656,26 @@
 
             broadcastSystemMessage(`${playerName} har lämnat spelet. Deras kort har lagts till i kasserade högen.`);
 
-            let levandeSpelare = gameState.players.filter(pl => pl && !pl.isLeft);
+            let livingPlayers = gameState.players.filter(pl => pl && !pl.isLeft);
 
-            if (gameState.numPlayers === 2 && levandeSpelare.length === 1 && !gameState.gameOver) {
-                let vinnare = levandeSpelare[0];
-                avslutaSpelMedVinnare(vinnare.name, `🏆 Du vann för du är ensam kvar i spelet!`);
+            if (gameState.numPlayers === 2 && livingPlayers.length === 1 && !gameState.gameOver) {
+                let winner = livingPlayers[0];
+                endGameWithWinner(winner.name, `🏆 Du vann för du är ensam kvar i spelet!`);
                 return;
             }
 
-            if (varDetDenSpelarensTur && !gameState.gameOver) {
-                nastaTur();
+            if (wasThatPlayersTurn && !gameState.gameOver) {
+                nextTurn();
             }
 
             if (isHost) {
                 broadcastState();
-                uppdateraUI();
+                updateUI();
             }
         }
 
-        function atergaTillLobbyLokal() {
-            stoppaBlitzTimer();
+        function returnToLobbyLocal() {
+            stopBlitzTimer();
             hasLeftGame = false;
             document.getElementById('stats-modal').style.display = 'none';
 
@@ -1685,28 +1698,28 @@
             document.getElementById('in-game-menu-btn').style.display = 'none';
             document.getElementById('leave-game-btn').style.display = 'none';
             
-            uppdateraLobbyUI();
+            updateLobbyUI();
         }
 
-        function atergaTillLobbyFranVinst() {
-            if (spellage === 'online' && isHost) {
+        function returnToLobbyFromWin() {
+            if (gameType === 'online' && isHost) {
                 connectedPlayersList.forEach(p => {
                     if (!p.isHost) p.isReady = false;
                 });
                 broadcastLobby();
                 connections.forEach(c => c.send({ type: 'RETURN_TO_LOBBY' }));
-                atergaTillLobbyLokal();
-            } else if (spellage === 'online') {
-                atergaTillLobbyLokal();
+                returnToLobbyLocal();
+            } else if (gameType === 'online') {
+                returnToLobbyLocal();
             }
         }
 
-        function skapaOnlineRum() {
+        function createOnlineRoom() {
             let nick = document.getElementById('online-nickname').value.trim() || 'Spelare 1';
             let status = document.getElementById('online-status');
             status.textContent = "Skapar online-rum...";
 
-            let shortRoomId = genereraKortKod();
+            let shortRoomId = generateRoomCode();
 
             try {
                 if (peer && !peer.destroyed) peer.destroy();
@@ -1718,9 +1731,9 @@
                     currentRoomId = id;
                     connectedPlayersList = [{ id: 0, name: nick, isHost: true, isReady: true, peerId: id, color: PLAYER_COLORS[0] }];
                     
-                    rumSpelareKronologisk = [nick];
-                    rumsStatistik = {};
-                    rumsStatistik[nick] = { matches: 0, wins: 0, losses: 0 };
+                    roomPlayersChronological = [nick];
+                    roomStats = {};
+                    roomStats[nick] = { matches: 0, wins: 0, losses: 0 };
 
                     document.getElementById('online-step-1').style.display = 'none';
                     document.getElementById('online-step-join').style.display = 'none';
@@ -1730,8 +1743,8 @@
                     document.getElementById('guest-controls-view').style.display = 'none';
                     document.getElementById('ready-button-container').style.display = 'none';
                     
-                    uppdateraLobbyUI();
-                    laggTillChatMeddelande("System", `${nick} har skapat rummet.`, true, '#38bdf8', getTimestamp());
+                    updateLobbyUI();
+                    appendChatMessage("System", `${nick} har skapat rummet.`, true, '#38bdf8', getTimestamp());
                     status.textContent = "";
                 });
 
@@ -1743,7 +1756,7 @@
                             return;
                         }
 
-                        conn.on('data', (data) => hanteraInkommandeData(data, conn));
+                        conn.on('data', (data) => handleIncomingData(data, conn));
                         conn.on('close', () => {
                             let leftPlayer = connectedPlayersList.find(p => p.peerId === conn.peer);
                             connections = connections.filter(c => c !== conn);
@@ -1755,7 +1768,7 @@
                                     let targetPl = gameState.players.find(pl => pl.name === leftPlayer.name);
                                     if (targetPl && !targetPl.isLeft) {
                                         let targetIdx = gameState.players.indexOf(targetPl);
-                                        hanteraSpelareLamnade(leftPlayer.name, targetIdx);
+                                        handlePlayerLeft(leftPlayer.name, targetIdx);
                                         connections.forEach(c => c.send({ 
                                             type: 'PLAYER_LEFT_GAME', 
                                             playerName: leftPlayer.name, 
@@ -1772,7 +1785,7 @@
 
                 peer.on('error', (err) => {
                     if (err.type === 'unavailable-id') {
-                        skapaOnlineRum();
+                        createOnlineRoom();
                     } else {
                         status.textContent = "Kunde inte ansluta till nätverket: " + err.type;
                     }
@@ -1782,7 +1795,7 @@
             }
         }
 
-        function anslutTillRum() {
+        function connectToRoom() {
             let roomId = document.getElementById('online-room-id').value.trim().toUpperCase();
             let nick = document.getElementById('online-nickname').value.trim();
             let status = document.getElementById('online-status');
@@ -1820,7 +1833,7 @@
                         conn.send({ type: 'JOIN_LOBBY', name: nick, peerId: peer.id });
                     });
 
-                    conn.on('data', (data) => hanteraInkommandeData(data, conn));
+                    conn.on('data', (data) => handleIncomingData(data, conn));
 
                     conn.on('error', () => {
                         status.textContent = "Kunde inte hitta rummet eller så är det fullt.";
@@ -1829,7 +1842,7 @@
                     conn.on('close', () => {
                         if (!hasLeftGame && document.getElementById('online-lobby-view').style.display === 'block') {
                             status.textContent = "Värden (host) har lämnat rummet.";
-                            setTimeout(() => visaHuvudmeny(), 1500);
+                            setTimeout(() => showMainMenu(), 1500);
                         }
                     });
                 };
@@ -1844,11 +1857,11 @@
             }
         }
 
-        function markeraMigSomRedo() {
+        function toggleReadyStatus() {
             if (isMyReadyStatus) return;
             isMyReadyStatus = true;
             
-            stangStatistikModal();
+            closeStatsModal();
 
             let btn = document.getElementById('toggle-ready-btn');
             btn.disabled = true;
@@ -1858,7 +1871,7 @@
             sendToHost({ type: 'PLAYER_READY_STATUS', peerId: peer.id, isReady: true });
         }
 
-        function visaSnabbtMeddelande(elementId) {
+        function showQuickMessage(elementId) {
             let el = document.getElementById(elementId);
             if (el) {
                 el.classList.add('show');
@@ -1866,21 +1879,21 @@
             }
         }
 
-        function kopieraRumskod() {
+        function copyRoomCode() {
             let codeInput = document.getElementById('display-room-code');
             codeInput.select();
             navigator.clipboard.writeText(codeInput.value);
-            visaSnabbtMeddelande('copy-code-notice');
+            showQuickMessage('copy-code-notice');
         }
 
-        function kopieraRumsLank() {
+        function copyRoomLink() {
             let roomCode = document.getElementById('display-room-code').value;
             let fullUrl = window.location.origin + window.location.pathname + '?room=' + roomCode;
             navigator.clipboard.writeText(fullUrl);
-            visaSnabbtMeddelande('copy-link-notice');
+            showQuickMessage('copy-link-notice');
         }
 
-        function uppdateraLobbyUI() {
+        function updateLobbyUI() {
             let list = document.getElementById('connected-players-list');
             list.innerHTML = '';
             
@@ -1923,13 +1936,13 @@
 
         function broadcastSystemMessage(text) {
             const time = getTimestamp();
-            laggTillChatMeddelande("System", text, true, '#38bdf8', time);
+            appendChatMessage("System", text, true, '#38bdf8', time);
             connections.forEach(c => {
                 try { c.send({ type: 'SYSTEM_MESSAGE', text: text, time: time }); } catch(e){}
             });
         }
 
-        function hanteraInkommandeData(data, conn) {
+        function handleIncomingData(data, conn) {
             let status = document.getElementById('online-status');
 
             if (data.type === 'NAME_TAKEN') {
@@ -1953,10 +1966,10 @@
                 toggleBtn.style.background = '#16a34a';
             } else if (data.type === 'HOST_LEFT') {
                 if (status) status.textContent = "Värden (host) har stängt rummet.";
-                setTimeout(() => visaHuvudmeny(), 1500);
+                setTimeout(() => showMainMenu(), 1500);
             } else if (data.type === 'ROOM_FULL') {
                 if (status) status.textContent = "Rummet är fullt (max 8 spelare)!";
-                setTimeout(() => visaHuvudmeny(), 1500);
+                setTimeout(() => showMainMenu(), 1500);
             } else if (data.type === 'JOIN_LOBBY' && isHost) {
                 let lowerName = data.name.trim().toLowerCase();
                 let nameExists = connectedPlayersList.some(p => p.name.trim().toLowerCase() === lowerName);
@@ -1975,11 +1988,11 @@
                     let assignedColor = PLAYER_COLORS[newId % PLAYER_COLORS.length];
                     connectedPlayersList.push({ id: newId, name: data.name, isHost: false, isReady: false, peerId: data.peerId, color: assignedColor });
                     
-                    if (!rumSpelareKronologisk.includes(data.name)) {
-                        rumSpelareKronologisk.push(data.name);
+                    if (!roomPlayersChronological.includes(data.name)) {
+                        roomPlayersChronological.push(data.name);
                     }
-                    if (!rumsStatistik[data.name]) {
-                        rumsStatistik[data.name] = { matches: 0, wins: 0, losses: 0 };
+                    if (!roomStats[data.name]) {
+                        roomStats[data.name] = { matches: 0, wins: 0, losses: 0 };
                     }
 
                     conn.send({ type: 'JOIN_ACCEPTED' });
@@ -2008,15 +2021,15 @@
             } else if (data.type === 'SETTINGS_UPDATE') {
                 gameMode = data.gameMode;
                 blitzTimeLimit = data.blitzTimeLimit;
-                uppdateraGastInstallningarUI(data.gameMode, data.blitzTimeLimit, data.stockSize);
+                updateGuestSettingsUI(data.gameMode, data.blitzTimeLimit, data.stockSize);
             } else if (data.type === 'LOBBY_UPDATE') {
                 connectedPlayersList = data.players;
                 connectedPlayersList.forEach(p => {
-                    if (!rumSpelareKronologisk.includes(p.name)) {
-                        rumSpelareKronologisk.push(p.name);
+                    if (!roomPlayersChronological.includes(p.name)) {
+                        roomPlayersChronological.push(p.name);
                     }
-                    if (!rumsStatistik[p.name]) {
-                        rumsStatistik[p.name] = { matches: 0, wins: 0, losses: 0 };
+                    if (!roomStats[p.name]) {
+                        roomStats[p.name] = { matches: 0, wins: 0, losses: 0 };
                     }
                 });
 
@@ -2028,18 +2041,18 @@
                 if (myObj) {
                     myPlayerId = myObj.id;
                 }
-                uppdateraLobbyUI();
+                updateLobbyUI();
             } else if (data.type === 'SYNC_STATS') {
-                rumsStatistik = data.stats;
-                rumSpelareKronologisk = data.kronologisk;
+                roomStats = data.stats;
+                roomPlayersChronological = data.chronological;
             } else if (data.type === 'SYSTEM_MESSAGE') {
-                laggTillChatMeddelande("System", data.text, true, '#38bdf8', data.time || getTimestamp());
+                appendChatMessage("System", data.text, true, '#38bdf8', data.time || getTimestamp());
             } else if (data.type === 'PLAYER_LEFT_GAME') {
                 if (!isHost) {
-                    hanteraSpelareLamnade(data.playerName, data.playerId);
+                    handlePlayerLeft(data.playerName, data.playerId);
                 }
             } else if (data.type === 'RETURN_TO_LOBBY') {
-                atergaTillLobbyLokal();
+                returnToLobbyLocal();
             } else if (data.type === 'GAME_START') {
                 hasLeftGame = false;
                 document.getElementById('setup-modal').style.display = 'none';
@@ -2057,31 +2070,31 @@
                     myPlayerId = matchingPl;
                 }
 
-                startaBlitzTimerOmKrävs();
-                uppdateraUI();
-                visaToast("Spelet har startat!");
+                startBlitzTimerIfNeeded();
+                updateUI();
+                showToast("Spelet har startat!");
             } else if (data.type === 'GAME_STATE_UPDATE') {
                 gameState = data.gameState;
                 if (gameState.gameOver) {
-                    visaVinnarModal();
+                    showWinnerModal();
                 } else {
-                    startaBlitzTimerOmKrävs();
+                    startBlitzTimerIfNeeded();
                 }
-                uppdateraUI();
+                updateUI();
             } else if (data.type === 'ACTION_PLAY_CENTER' && isHost) {
                 if (gameState.turnIndex === data.playerId && !gameState.gameOver) {
                     let success = executePlayCard(data.playerId, data.source, data.index, data.centerIndex);
                     broadcastState();
-                    uppdateraUI();
+                    updateUI();
                 }
             } else if (data.type === 'ACTION_DISCARD' && isHost) {
                 if (gameState.turnIndex === data.playerId && !gameState.gameOver) {
                     executeDiscard(data.playerId, data.handIndex, data.discardIndex);
                     broadcastState();
-                    uppdateraUI();
+                    updateUI();
                 }
             } else if (data.type === 'CHAT_MESSAGE') {
-                laggTillChatMeddelande(data.sender, data.text, false, data.color, data.time || getTimestamp());
+                appendChatMessage(data.sender, data.text, false, data.color, data.time || getTimestamp());
                 if (isHost) {
                     connections.forEach(c => {
                         if (c !== conn) {
@@ -2096,7 +2109,7 @@
             connections.forEach(c => {
                 try { c.send({ type: 'LOBBY_UPDATE', players: connectedPlayersList }); } catch(e){}
             });
-            uppdateraLobbyUI();
+            updateLobbyUI();
         }
 
         function broadcastState() {
@@ -2105,7 +2118,7 @@
             });
         }
 
-        function startaOnlineSpelHost() {
+        function startOnlineGameHost() {
             if (!isHost || connectedPlayersList.length < 2) return;
 
             hasLeftGame = false;
@@ -2114,19 +2127,19 @@
 
             let val = document.getElementById('online-stock-size').value;
             let stockSize = val === 'debug' ? 2 : parseInt(val);
-            let antalSpelare = connectedPlayersList.length;
-            let kortleksMultiplikator = antalSpelare >= 5 ? 2 : 1;
+            let numPlayers = connectedPlayersList.length;
+            let deckMultiplier = numPlayers >= 5 ? 2 : 1;
 
-            gameState.numPlayers = antalSpelare;
+            gameState.numPlayers = numPlayers;
             gameState.gameOver = false;
             gameState.winnerName = null;
-            gameState.deck = skapaKortlek(kortleksMultiplikator);
+            gameState.deck = createDeck(deckMultiplier);
             gameState.recycleDeck = [];
             gameState.centerPiles = [[], [], [], []];
             gameState.currentRound = 1;
             gameState.turnIndex = 0;
             gameState.selectedCard = null;
-            senasteDragInfo = null;
+            latestMoveInfo = null;
 
             gameState.players = connectedPlayersList.map(p => ({
                 name: p.name,
@@ -2138,11 +2151,11 @@
                 color: p.color
             }));
 
-            rumSpelareKronologisk = connectedPlayersList.map(p => p.name);
-            rumsStatistik = {};
-            rumSpelareKronologisk.forEach(n => {
-                if (!rumsStatistik[n]) {
-                    rumsStatistik[n] = { matches: 0, wins: 0, losses: 0 };
+            roomPlayersChronological = connectedPlayersList.map(p => p.name);
+            roomStats = {};
+            roomPlayersChronological.forEach(n => {
+                if (!roomStats[n]) {
+                    roomStats[n] = { matches: 0, wins: 0, losses: 0 };
                 }
             });
 
@@ -2150,14 +2163,14 @@
                 for (let i = 0; i < stockSize; i++) p.stock.push(gameState.deck.pop());
             });
 
-            for (let i = 0; i < gameState.numPlayers; i++) fyllHand(i);
+            for (let i = 0; i < gameState.numPlayers; i++) fillHand(i);
 
             document.getElementById('setup-modal').style.display = 'none';
             document.getElementById('stats-modal').style.display = 'none';
             document.getElementById('game-chat-section').style.display = 'flex';
             document.getElementById('leave-game-btn').style.display = 'inline-block';
             
-            startaBlitzTimerOmKrävs();
+            startBlitzTimerIfNeeded();
 
             connections.forEach(c => {
                 try {
@@ -2170,8 +2183,8 @@
                 } catch(e){}
             });
             broadcastStatsSync();
-            uppdateraUI();
-            visaToast("Spelet startar!");
+            updateUI();
+            showToast("Spelet startar!");
         }
 
         function sendToHost(data) {
@@ -2180,7 +2193,7 @@
             }
         }
 
-        function valideraOchRensaText(text) {
+        function validateAndCleanText(text) {
             if (/[<>]/g.test(text)) return null;
             
             const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
@@ -2191,15 +2204,15 @@
             return div.innerHTML;
         }
 
-        function skickaChatMeddelande() {
+        function sendChatMessage() {
             if (hasLeftGame) return;
 
-            let input = document.getElementById(spellage === 'online' && document.getElementById('online-lobby-view').style.display === 'block' ? 'chat-input' : 'game-chat-input');
+            let input = document.getElementById(gameType === 'online' && document.getElementById('online-lobby-view').style.display === 'block' ? 'chat-input' : 'game-chat-input');
             if (!input) return;
             let rawText = input.value.trim();
             if (!rawText) return;
 
-            let safeText = valideraOchRensaText(rawText);
+            let safeText = validateAndCleanText(rawText);
             if (safeText === null) {
                 let status = document.getElementById('online-status');
                 if (status) status.textContent = "Ogiltigt meddelande! Endast ren text är tillåten.";
@@ -2209,7 +2222,7 @@
             let senderName = 'Spelare';
             let senderColor = '#38bdf8';
 
-            if (spellage === 'online') {
+            if (gameType === 'online') {
                 let myObj = connectedPlayersList.find(p => p.id === myPlayerId);
                 if (myObj) {
                     senderName = myObj.name;
@@ -2221,11 +2234,11 @@
             }
 
             const time = getTimestamp();
-            laggTillChatMeddelande(senderName, safeText, false, senderColor, time);
+            appendChatMessage(senderName, safeText, false, senderColor, time);
 
             let msgPayload = { type: 'CHAT_MESSAGE', sender: senderName, text: safeText, color: senderColor, time: time };
 
-            if (spellage === 'online') {
+            if (gameType === 'online') {
                 if (isHost) {
                     connections.forEach(c => {
                         try { c.send(msgPayload); } catch(e){}
@@ -2238,7 +2251,7 @@
             input.value = '';
         }
 
-        function laggTillChatMeddelande(sender, text, isSystem = false, color = '#38bdf8', time = getTimestamp()) {
+        function appendChatMessage(sender, text, isSystem = false, color = '#38bdf8', time = getTimestamp()) {
             let chatBoxes = [document.getElementById('chat-messages'), document.getElementById('game-chat-messages')];
             chatBoxes.forEach(chatBox => {
                 if (!chatBox) return;
@@ -2254,7 +2267,7 @@
             });
         }
 
-        function uppdateraUI() {
+        function updateUI() {
             document.getElementById('round-display').textContent = 'Omgång: ' + gameState.currentRound;
             document.getElementById('deck-count').textContent = 'Draghög: ' + gameState.deck.length;
             document.getElementById('recycle-count').textContent = 'Kasserade: ' + gameState.recycleDeck.length;
@@ -2263,7 +2276,7 @@
             menuBtn.style.display = gameState.gameOver ? 'inline-block' : 'none';
 
             let leaveBtn = document.getElementById('leave-game-btn');
-            leaveBtn.style.display = spellage === 'online' && !gameState.gameOver && !hasLeftGame ? 'inline-block' : 'none';
+            leaveBtn.style.display = gameType === 'online' && !gameState.gameOver && !hasLeftGame ? 'inline-block' : 'none';
 
             let user = gameState.players[myPlayerId] || { name: 'Du', stock: [], discards: [[],[],[],[]], hand: [] };
             document.getElementById('local-player-name').textContent = 'Din Spelplan (' + user.name + ')';
@@ -2304,7 +2317,7 @@
                 let discardsHTML = '';
                 opp.discards.forEach(function(hog, dIdx) {
                     let topCard = hog.length > 0 ? hog[hog.length - 1] : null;
-                    let isTargeted = senasteDragInfo && senasteDragInfo.targetType === 'discard' && senasteDragInfo.player === i && senasteDragInfo.targetIdx === dIdx;
+                    let isTargeted = latestMoveInfo && latestMoveInfo.targetType === 'discard' && latestMoveInfo.player === i && latestMoveInfo.targetIdx === dIdx;
                     
                     let historyChipsHTML = '';
                     if (hog.length > 1) {
@@ -2312,7 +2325,7 @@
                         historyChipsHTML = '<div style="display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; margin-top: 3px; max-width: 80px;">';
                         underlyingCards.forEach(function(k) {
                             let cClass = getCardClass(k);
-                            let txt = formateraKortText(k);
+                            let txt = formatCardText(k);
                             historyChipsHTML += `<span style="font-size: 0.6rem; padding: 1px 3px; border-radius: 3px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2);" class="${cClass}">${txt}</span>`;
                         });
                         historyChipsHTML += '</div>';
@@ -2353,10 +2366,10 @@
             centerContainer.innerHTML = '';
             gameState.centerPiles.forEach((hog, index) => {
                 let topCard = hog.length > 0 ? hog[hog.length - 1] : null;
-                let isTargeted = senasteDragInfo && senasteDragInfo.targetType === 'center' && senasteDragInfo.targetIdx === index;
+                let isTargeted = latestMoveInfo && latestMoveInfo.targetType === 'center' && latestMoveInfo.targetIdx === index;
                 let btn = document.createElement('button');
                 btn.className = `card ${topCard ? getCardClass(topCard) : 'empty-slot'} ${isTargeted ? 'card-highlight-target' : ''}`;
-                btn.onclick = () => spelaTillMitthog(index);
+                btn.onclick = () => playToCenter(index);
                 btn.innerHTML = topCard ? renderCardHTML(topCard, 'Hög ' + (index + 1)) : '<span class="card-label">Hög ' + (index + 1) + '</span>';
                 centerContainer.appendChild(btn);
             });
@@ -2374,7 +2387,7 @@
             user.discards.forEach((hog, index) => {
                 let topCard = hog.length > 0 ? hog[hog.length - 1] : null;
                 let isSel = gameState.selectedCard && gameState.selectedCard.source === 'discard' && gameState.selectedCard.index === index;
-                let isTargeted = senasteDragInfo && senasteDragInfo.targetType === 'discard' && senasteDragInfo.player === myPlayerId && senasteDragInfo.targetIdx === index;
+                let isTargeted = latestMoveInfo && latestMoveInfo.targetType === 'discard' && latestMoveInfo.player === myPlayerId && latestMoveInfo.targetIdx === index;
                 
                 let historyChipsHTML = '';
                 if (hog.length > 1) {
@@ -2382,7 +2395,7 @@
                     historyChipsHTML = '<div style="display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; margin-top: 4px; max-width: 75px;">';
                     underlyingCards.forEach(function(k) {
                         let cClass = getCardClass(k);
-                        let txt = formateraKortText(k);
+                        let txt = formatCardText(k);
                         historyChipsHTML += `<span style="font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2);" class="${cClass}">${txt}</span>`;
                     });
                     historyChipsHTML += '</div>';
@@ -2391,7 +2404,7 @@
                 let wrap = document.createElement('div');
                 wrap.className = 'discard-wrapper';
                 wrap.innerHTML = `
-                    <div class="card ${getCardClass(topCard)} ${isSel ? 'selected' : ''} ${isTargeted ? 'card-highlight-target' : ''}" onclick="klickaEgenSlanghog(${index})">
+                    <div class="card ${getCardClass(topCard)} ${isSel ? 'selected' : ''} ${isTargeted ? 'card-highlight-target' : ''}" onclick="clickOwnDiscard(${index})">
                         ${renderCardHTML(topCard, 'Släng ' + (index + 1))}
                     </div>
                     <div class="discard-stack-count">${hog.length} kort</div>
@@ -2402,20 +2415,20 @@
 
             let handContainer = document.getElementById('player-hand-container');
             handContainer.innerHTML = '';
-            user.hand.forEach((kort, index) => {
+            user.hand.forEach((card, index) => {
                 let isSelected = gameState.selectedCard && gameState.selectedCard.source === 'hand' && gameState.selectedCard.index === index;
-                let isSourceTargeted = senasteDragInfo && senasteDragInfo.sourceType === 'hand' && senasteDragInfo.sourceIdx === index && senasteDragInfo.player === myPlayerId;
+                let isSourceTargeted = latestMoveInfo && latestMoveInfo.sourceType === 'hand' && latestMoveInfo.sourceIdx === index && latestMoveInfo.player === myPlayerId;
                 let btn = document.createElement('button');
-                btn.className = `card ${getCardClass(kort)} ${isSelected ? 'selected' : ''} ${isSourceTargeted ? 'card-highlight-source' : ''}`;
-                btn.innerHTML = renderCardHTML(kort, 'Hand');
-                btn.onclick = () => valjKort('hand', index);
+                btn.className = `card ${getCardClass(card)} ${isSelected ? 'selected' : ''} ${isSourceTargeted ? 'card-highlight-source' : ''}`;
+                btn.innerHTML = renderCardHTML(card, 'Hand');
+                btn.onclick = () => selectCard('hand', index);
                 handContainer.appendChild(btn);
             });
 
-            senasteDragInfo = null;
+            latestMoveInfo = null;
         }
 
-        window.onload = oppnaSetup;
+        window.onload = openSetup;
     </script>
 </body>
 </html>
