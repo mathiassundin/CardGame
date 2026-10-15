@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame</title>
+    <title>CardGame v.2</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -413,7 +413,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame</h2>
+            <h2>CardGame v.2</h2>
 
             <div id="setup-view-mode">
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
@@ -548,7 +548,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame</h1>
+        <h1>CardGame v.2</h1>
     </header>
 
     <main class="game-container">
@@ -1238,7 +1238,7 @@
                 p.stock = [];
             }
 
-            // Skriv enbart i chatten (ingen pop-up)
+            // Skriv enbart i chatten (ingen pop-up för kvarvarande)
             broadcastSystemMessage(`${playerName} har lämnat spelet. Deras kort har lagts till i kasserade högen.`);
 
             // Om det enbart är 2 spelare totalt och en lämnar -> den kvarvarande vinner automatiskt!
@@ -1251,7 +1251,6 @@
 
             // Om flera spelare är med och en vanlig spelare lämnar: fortsätt spelet för resten!
             if (isHost) {
-                // Justera tur-index om det behövdes
                 if (gameState.turnIndex >= gameState.players.length) {
                     gameState.turnIndex = 0;
                 }
@@ -1324,12 +1323,17 @@
                         connectedPlayersList = connectedPlayersList.filter(p => p.peerId !== conn.peer);
                         if (leftPlayer) {
                             broadcastLobby();
-                            // Om spelet är igång, hantera avhoppet via spelar-ID
                             if (gameState.players && gameState.players.length > 0 && !gameState.gameOver) {
                                 let targetPl = gameState.players.find(pl => pl.name === leftPlayer.name);
                                 if (targetPl) {
                                     let targetIdx = gameState.players.indexOf(targetPl);
                                     hanteraSpelareLamnade(leftPlayer.name, targetIdx);
+                                    // Skicka meddelande till alla att just DENNA spelaren lämnat (utan att trigga RETURN_TO_LOBBY för klienter)
+                                    connections.forEach(c => c.send({ 
+                                        type: 'PLAYER_LEFT_GAME', 
+                                        playerName: leftPlayer.name, 
+                                        playerId: targetIdx 
+                                    }));
                                 }
                             } else {
                                 broadcastSystemMessage(`${leftPlayer.name} har lämnat lobbyn.`);
@@ -1453,11 +1457,9 @@
             } else if (data.type === 'SYSTEM_MESSAGE') {
                 laggTillChatMeddelande("System", data.text, true);
             } else if (data.type === 'PLAYER_LEFT_GAME') {
-                hanteraSpelareLamnade(data.playerName, data.playerId);
-                if (isHost) {
-                    connections.forEach(c => {
-                        if (c !== conn) c.send(data);
-                    });
+                // VIKTIGT: Endast hantera avhoppet i spelet för klienter, tvinga INTE till lobbyn här!
+                if (!isHost) {
+                    hanteraSpelareLamnade(data.playerName, data.playerId);
                 }
             } else if (data.type === 'RETURN_TO_LOBBY') {
                 atergaTillLobbyLokal();
@@ -1676,9 +1678,8 @@
             for (let i = 0; i < gameState.players.length; i++) {
                 if (i === myPlayerId) continue;
                 let opp = gameState.players[i];
-                if (!opp || (opp.stock && opp.stock.length === 0 && gameState.numPlayers > 2 && opp.hand.length === 0)) {
-                    // Om spelaren har lämnat helt (tom stock och ej aktiv) kan vi hoppa över eller visa som utslagen
-                }
+                if (!opp) continue;
+                
                 let isCurrent = gameState.turnIndex === i && !gameState.gameOver;
                 let div = document.createElement('div');
                 div.className = 'opponent-card ' + (isCurrent ? 'active-turn' : '');
