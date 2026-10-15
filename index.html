@@ -413,7 +413,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>Skip-Bo</h2>
+            <h2>CardGame</h2>
 
             <div id="setup-view-mode">
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
@@ -435,6 +435,7 @@
                 <div id="single-blitz-container" style="display: none; margin-bottom: 0.5rem;">
                     <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Blitz-tid per tur:</label>
                     <select id="single-blitz-time">
+                        <option value="10">10 sekunder</option>
                         <option value="15">15 sekunder</option>
                         <option value="20" selected>20 sekunder</option>
                         <option value="30">30 sekunder</option>
@@ -547,7 +548,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>Skip-Bo</h1>
+        <h1>CardGame</h1>
     </header>
 
     <main class="game-container">
@@ -963,7 +964,6 @@
 
                 if (blitzTimeRemaining <= 0) {
                     stoppaBlitzTimer();
-                    // Tiden ute -> tvinga nästa tur (eller kasta ett slumpmässigt kort om det är spelarens tur)
                     if (spellage === 'single' || (spellage === 'online' && isHost)) {
                         tvingaSlutBlixtTur();
                     }
@@ -981,11 +981,9 @@
         function tvingaSlutBlixtTur() {
             if (gameState.gameOver) return;
             let p = gameState.players[gameState.turnIndex];
-            // Om spelaren har kort på hand, lägg det första på första lediga slänghögen
-            if (p.hand.length > 0) {
+            if (p && p.hand && p.hand.length > 0) {
                 let avlagt = p.hand.splice(0, 1)[0];
-                let dIdx = 0;
-                p.discards[dIdx].push(avlagt);
+                p.discards[0].push(avlagt);
                 visaToast(`${p.name} fick tidsbrist i Blitz!`);
             }
             nastaTur();
@@ -1009,13 +1007,13 @@
             startaBlitzTimerOmKrävs();
 
             let currentP = gameState.players[gameState.turnIndex];
-            if (currentP.isBot) {
+            if (currentP && currentP.isBot) {
                 visaToast(`${currentP.name}s tur`);
                 setTimeout(koraBotTur, 1000);
             } else {
                 if (gameState.turnIndex === myPlayerId) {
                     visaToast("Din tur!");
-                } else {
+                } else if (currentP) {
                     visaToast(`${currentP.name}s tur`);
                 }
             }
@@ -1091,6 +1089,7 @@
             if (gameState.gameOver) return;
             let pIdx = gameState.turnIndex;
             let bot = gameState.players[pIdx];
+            if (!bot) return;
             fyllHand(pIdx);
 
             let harSpelat = true;
@@ -1190,8 +1189,8 @@
                 document.getElementById('winner-text').textContent = gameState.customWinMsg;
             } else {
                 document.getElementById('winner-text').textContent = jagVann 
-                    ? "Du tömde din hög först och vann spelet!" 
-                    : `${gameState.winnerName} tömde sin hög först och vann spelet. Bättre lycka nästa gång!`;
+                    ? "Du tömde din stock först och vann spelet!" 
+                    : `${gameState.winnerName} tömde sin stock först och vann spelet. Bättre lycka nästa gång!`;
             }
 
             let modalButtons = document.getElementById('winner-modal-buttons');
@@ -1236,16 +1235,13 @@
                 p.discards.forEach(hog => {
                     if (hog) gameState.recycleDeck.push(...hog);
                 });
+                p.stock = [];
             }
 
+            // Skriv enbart i chatten (ingen pop-up)
             broadcastSystemMessage(`${playerName} har lämnat spelet. Deras kort har lagts till i kasserade högen.`);
 
-            // Kontrollera om det enbart är 2 spelare totalt kvar i gameState och en lämnar -> den kvarvarande vinner automatiskt!
-            let aktivaSpelareKvar = gameState.players.filter(pl => pl.stock.length > 0 || pl === gameState.players[myPlayerId]); 
-            // För en robust koll: räkna spelare vars stock inte är helt nollad pga avhopp, eller kolla aktiva spelarobjekt.
-            // Låt oss markera spelarens stock som tom:
-            if (p) p.stock = [];
-
+            // Om det enbart är 2 spelare totalt och en lämnar -> den kvarvarande vinner automatiskt!
             let levandeSpelare = gameState.players.filter(pl => pl.stock && pl.stock.length > 0);
             if (gameState.numPlayers === 2 && levandeSpelare.length === 1 && !gameState.gameOver) {
                 let vinnare = levandeSpelare[0];
@@ -1253,9 +1249,14 @@
                 return;
             }
 
+            // Om flera spelare är med och en vanlig spelare lämnar: fortsätt spelet för resten!
             if (isHost) {
-                connections.forEach(c => c.send({ type: 'RETURN_TO_LOBBY' }));
-                atergaTillLobbyLokal();
+                // Justera tur-index om det behövdes
+                if (gameState.turnIndex >= gameState.players.length) {
+                    gameState.turnIndex = 0;
+                }
+                broadcastState();
+                uppdateraUI();
             }
         }
 
@@ -1323,7 +1324,16 @@
                         connectedPlayersList = connectedPlayersList.filter(p => p.peerId !== conn.peer);
                         if (leftPlayer) {
                             broadcastLobby();
-                            broadcastSystemMessage(`${leftPlayer.name} har lämnat lobbyn.`);
+                            // Om spelet är igång, hantera avhoppet via spelar-ID
+                            if (gameState.players && gameState.players.length > 0 && !gameState.gameOver) {
+                                let targetPl = gameState.players.find(pl => pl.name === leftPlayer.name);
+                                if (targetPl) {
+                                    let targetIdx = gameState.players.indexOf(targetPl);
+                                    hanteraSpelareLamnade(leftPlayer.name, targetIdx);
+                                }
+                            } else {
+                                broadcastSystemMessage(`${leftPlayer.name} har lämnat lobbyn.`);
+                            }
                         }
                     });
                 });
@@ -1369,6 +1379,11 @@
 
                     conn.on('error', () => {
                         status.textContent = "Kunde inte hitta rummet eller så är det fullt.";
+                    });
+
+                    conn.on('close', () => {
+                        alert("Värden (admin) har lämnat rummet eller spelet avslutades.");
+                        oppnaSetup();
                     });
                 });
             } catch (e) {
@@ -1661,6 +1676,9 @@
             for (let i = 0; i < gameState.players.length; i++) {
                 if (i === myPlayerId) continue;
                 let opp = gameState.players[i];
+                if (!opp || (opp.stock && opp.stock.length === 0 && gameState.numPlayers > 2 && opp.hand.length === 0)) {
+                    // Om spelaren har lämnat helt (tom stock och ej aktiv) kan vi hoppa över eller visa som utslagen
+                }
                 let isCurrent = gameState.turnIndex === i && !gameState.gameOver;
                 let div = document.createElement('div');
                 div.className = 'opponent-card ' + (isCurrent ? 'active-turn' : '');
