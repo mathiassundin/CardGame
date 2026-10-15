@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame v.5</title>
+    <title>CardGame v.6</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -414,7 +414,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame v.5</h2>
+            <h2>CardGame v.6</h2>
 
             <div id="setup-view-mode">
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
@@ -557,7 +557,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame v.5</h1>
+        <h1>CardGame v.6</h1>
     </header>
 
     <main class="game-container">
@@ -693,12 +693,10 @@
             const roomParam = urlParams.get('room');
             if (roomParam) {
                 visaOnlineSetup();
-                // Fyll i rumskoden i det dolda/separata fältet för anslutning
                 document.getElementById('online-step-1').style.display = 'block';
                 document.getElementById('online-step-join').style.display = 'none';
                 document.getElementById('online-room-id').value = roomParam;
                 document.getElementById('direct-invite-notice').style.display = 'block';
-                // Ändra knappen "Gå med" så den ansluter direkt med länkat rum
                 let btnGamed = document.querySelector('#online-step-1 button:nth-of-type(3)');
                 if (btnGamed) {
                     btnGamed.textContent = "Anslut till länk 🔗";
@@ -738,7 +736,6 @@
             document.getElementById('direct-invite-notice').style.display = 'none';
             document.getElementById('online-status').textContent = '';
             
-            // Återställ knapptext om man klickar tillbaka
             let btnGamed = document.querySelector('#online-step-1 button:nth-of-type(3)');
             if (btnGamed) {
                 btnGamed.textContent = "Gå med";
@@ -1445,21 +1442,6 @@
                     conn.on('open', () => {
                         connections = [conn];
                         conn.send({ type: 'JOIN_LOBBY', name: nick, peerId: myId });
-                        
-                        document.getElementById('online-step-1').style.display = 'none';
-                        document.getElementById('online-step-join').style.display = 'none';
-                        document.getElementById('online-lobby-view').style.display = 'block';
-                        document.getElementById('display-room-code').value = roomId;
-                        document.getElementById('host-controls').style.display = 'none';
-                        document.getElementById('start-online-game-btn').style.display = 'none';
-                        document.getElementById('ready-button-container').style.display = 'block';
-                        
-                        let toggleBtn = document.getElementById('toggle-ready-btn');
-                        toggleBtn.disabled = false;
-                        toggleBtn.textContent = 'Jag är REDO 👍';
-                        toggleBtn.style.background = '#16a34a';
-
-                        status.textContent = "Ansluten! Klicka på 'Jag är REDO' för att göra dig klar.";
                     });
 
                     conn.on('data', (data) => hanteraInkommandeData(data, conn));
@@ -1469,7 +1451,7 @@
                     });
 
                     conn.on('close', () => {
-                        alert("Värden (admin) har lämnat rummet eller spelet avslutades.");
+                        alert("Anslutningen stängdes av värden.");
                         visaHuvudmeny();
                     });
                 });
@@ -1553,19 +1535,49 @@
         }
 
         function hanteraInkommandeData(data, conn) {
-            if (data.type === 'ROOM_FULL') {
+            let status = document.getElementById('online-status');
+
+            if (data.type === 'NAME_TAKEN') {
+                alert(`Namnet "${data.name}" är redan upptaget i detta rum! Vänligen ange ett annat spelarnamn.`);
+                if (status) status.textContent = `Namnet "${data.name}" är upptaget. Ändra namn och försök igen.`;
+                try { conn.close(); } catch(e){}
+                visaOnlineSetup();
+            } else if (data.type === 'JOIN_ACCEPTED') {
+                document.getElementById('online-step-1').style.display = 'none';
+                document.getElementById('online-step-join').style.display = 'none';
+                document.getElementById('online-lobby-view').style.display = 'block';
+                document.getElementById('display-room-code').value = currentRoomId;
+                document.getElementById('host-controls').style.display = 'none';
+                document.getElementById('start-online-game-btn').style.display = 'none';
+                document.getElementById('ready-button-container').style.display = 'block';
+                
+                let toggleBtn = document.getElementById('toggle-ready-btn');
+                toggleBtn.disabled = false;
+                toggleBtn.textContent = 'Jag är REDO 👍';
+                toggleBtn.style.background = '#16a34a';
+
+                if (status) status.textContent = "Ansluten! Klicka på 'Jag är REDO' för att göra dig klar.";
+            } else if (data.type === 'ROOM_FULL') {
                 alert("Rummet är fullt (max 8 spelare)!");
                 visaHuvudmeny();
             } else if (data.type === 'JOIN_LOBBY' && isHost) {
+                let lowerName = data.name.trim().toLowerCase();
+                let nameExists = connectedPlayersList.some(p => p.name.trim().toLowerCase() === lowerName);
+
+                if (nameExists) {
+                    conn.send({ type: 'NAME_TAKEN', name: data.name });
+                    setTimeout(() => conn.close(), 500);
+                    return;
+                }
+
                 if (connectedPlayersList.length < 8) {
-                    let exists = connectedPlayersList.some(p => p.peerId === data.peerId);
-                    if (!exists) {
-                        let newId = connectedPlayersList.length;
-                        let assignedColor = PLAYER_COLORS[newId % PLAYER_COLORS.length];
-                        connectedPlayersList.push({ id: newId, name: data.name, isHost: false, isReady: false, peerId: data.peerId, color: assignedColor });
-                        broadcastLobby();
-                        broadcastSystemMessage(`${data.name} har gått med i lobbyn.`);
-                    }
+                    let newId = connectedPlayersList.length;
+                    let assignedColor = PLAYER_COLORS[newId % PLAYER_COLORS.length];
+                    connectedPlayersList.push({ id: newId, name: data.name, isHost: false, isReady: false, peerId: data.peerId, color: assignedColor });
+                    
+                    conn.send({ type: 'JOIN_ACCEPTED' });
+                    broadcastLobby();
+                    broadcastSystemMessage(`${data.name} har gått med i lobbyn.`);
                 }
             } else if (data.type === 'PLAYER_READY_STATUS' && isHost) {
                 let target = connectedPlayersList.find(p => p.peerId === data.peerId);
@@ -1576,9 +1588,8 @@
             } else if (data.type === 'LOBBY_UPDATE') {
                 connectedPlayersList = data.players;
                 let currentNick = document.getElementById('online-nickname').value.trim() || 'Spelare';
-                let myObj = connectedPlayersList.find(p => p.name === currentNick && p.peerId === peer.id);
+                let myObj = connectedPlayersList.find(p => p.name.toLowerCase() === currentNick.toLowerCase() && p.peerId === peer.id);
                 if (!myObj) {
-                    // Hitta via peer ID om namnet inte matchar exakt
                     myObj = connectedPlayersList.find(p => p.peerId === peer.id);
                 }
                 if (myObj) {
@@ -1603,9 +1614,8 @@
                 blitzTimeLimit = data.blitzTimeLimit;
                 gameState = data.gameState;
                 
-                // Sätt korrekt myPlayerId baserat på peer ID i spelet
                 let currentNick = document.getElementById('online-nickname').value.trim();
-                let matchingPl = gameState.players.findIndex(pl => pl.name === currentNick);
+                let matchingPl = gameState.players.findIndex(pl => pl.name.toLowerCase() === currentNick.toLowerCase());
                 if (matchingPl !== -1) {
                     myPlayerId = matchingPl;
                 }
