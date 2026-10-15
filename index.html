@@ -776,6 +776,19 @@
     <script>
         const BOT_NAMES = ["Gregor", "Astrid", "Karin", "Lars", "Sven", "Elin", "Maja", "Olof"];
         const PLAYER_COLORS = ["#38bdf8", "#4ade80", "#f59e0b", "#f43f5e", "#a855f7", "#06b6d4", "#ec4899", "#84cc16"];
+
+        // Gratis STUN-servrar från Google för bästa möjliga anslutning över Wi-Fi & vanliga nätverk
+        const PEER_CONFIG = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' }
+                ]
+            }
+        };
         
         let spellage = 'single';
         let peer = null;
@@ -1692,7 +1705,10 @@
 
             try {
                 if (peer && !peer.destroyed) peer.destroy();
-                peer = new Peer(shortRoomId);
+                
+                // Initiera PeerJS med tillagda STUN-servrar
+                peer = new Peer(shortRoomId, PEER_CONFIG);
+                
                 peer.on('open', (id) => {
                     isHost = true;
                     myPlayerId = 0;
@@ -1787,7 +1803,7 @@
 
             try {
                 if (!peer || peer.destroyed) {
-                    peer = new Peer();
+                    peer = new Peer(PEER_CONFIG);
                 }
 
                 let executeConnect = () => {
