@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame</title>
+    <title>CardGame v.14</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -32,6 +32,7 @@
             padding: 1rem;
             line-height: 1.4;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         header {
@@ -73,6 +74,7 @@
             justify-content: center;
             z-index: 1000;
             padding: 1rem;
+            overflow-x: hidden;
         }
 
         .modal-card {
@@ -80,12 +82,13 @@
             border: 2px solid #334155;
             padding: 1.5rem;
             border-radius: 16px;
-            max-width: 440px;
+            max-width: 460px;
             width: 100%;
             text-align: center;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
             max-height: 90vh;
             overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .modal-card h2 {
@@ -361,7 +364,7 @@
             border: 1px solid #334155;
             border-radius: 8px;
             padding: 0.5rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             text-align: left;
             max-height: 120px;
             overflow-y: auto;
@@ -377,6 +380,38 @@
         }
 
         .lobby-list li:last-child { border-bottom: none; }
+
+        /* Statistik-tabell i lobbyn */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+            margin-top: 0.5rem;
+            background: #0f172a;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .stats-table th, .stats-table td {
+            padding: 0.5rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        .stats-table th {
+            background: #1e293b;
+            color: #38bdf8;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .stats-table th:hover {
+            background: #334155;
+        }
+
+        .stats-table tr:last-child td {
+            border-bottom: none;
+        }
 
         /* Chat Styles */
         .chat-section {
@@ -451,7 +486,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame</h2>
+            <h2>CardGame v.14</h2>
 
             <!-- Inbyggda regler i startmenyn -->
             <details style="text-align: left; margin-bottom: 0.75rem;">
@@ -576,6 +611,11 @@
                     <div id="lobby-player-count-title" style="text-align:left; font-size:0.85rem; margin-bottom:0.25rem; font-weight:bold;">Anslutna spelare (1/8):</div>
                     <ul id="connected-players-list" class="lobby-list"></ul>
 
+                    <!-- Statistik-knapp under spellistan -->
+                    <div style="margin-bottom: 0.75rem;">
+                        <button class="btn" style="width: 100%; background: #475569; font-size: 0.9rem;" onclick="oppnaStatistikModal()">📊 Spelarstatistik</button>
+                    </div>
+
                     <div id="ready-button-container" style="margin-bottom: 0.75rem; display: none;">
                         <button id="toggle-ready-btn" class="btn" style="width: 100%; background: #16a34a; font-size: 1rem;" onclick="markeraMigSomRedo()">Jag är REDO 👍</button>
                     </div>
@@ -600,6 +640,37 @@
         </div>
     </div>
 
+    <!-- Statistik Modal -->
+    <div id="stats-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h2 style="margin: 0; font-size: 1.2rem;">📊 Rumsstatistik</h2>
+                <button class="btn" style="background: #334155; padding: 0.2rem 0.6rem; font-size: 0.8rem; min-height: auto;" onclick="stangStatistikModal()">✕</button>
+            </div>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.75rem; text-align: left;">Statistik för alla spelare som varit med i detta rum (klicka på rubrikerna för att sortera):</p>
+            
+            <div style="overflow-x: auto;">
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sorteraStatistik('name')">Spelare ↕</th>
+                            <th onclick="sorteraStatistik('matches')">Antal matcher ↕</th>
+                            <th onclick="sorteraStatistik('wins')">Vinster ↕</th>
+                            <th onclick="sorteraStatistik('losses')">Förluster ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-table-body">
+                        <!-- Fylls dynamiskt -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 1rem;">
+                <button class="btn" style="width: 100%; background: #2563eb;" onclick="stangStatistikModal()">Tillbaka till lobbyn 🏠</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Winner Modal -->
     <div id="winner-modal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
@@ -615,7 +686,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame</h1>
+        <h1>CardGame v.14</h1>
     </header>
 
     <main class="game-container">
@@ -649,7 +720,7 @@
 
             <div class="play-area">
                 <div class="sub-group">
-                    <h3>Min korthög</h3>
+                    <h3>Min spelhög</h3>
                     <div style="display: flex; gap: 1rem; align-items: center;">
                         <div id="player-stock-top" class="card empty-slot" onclick="valjKort('stock', 0)">Inget</div>
                         <div style="font-size: 0.75rem; color: #94a3b8;">Klicka för att spela kortet från stocken.</div>
@@ -694,6 +765,11 @@
         let hasLeftGame = false;
         let isMyReadyStatus = false;
 
+        let rumsStatistik = {}; // Spelarnamn -> { matches, wins, losses }
+        let rumSpelareKronologisk = []; // Håller reda på anslutningsordning
+        let aktuellSorteringKolumn = null;
+        let aktuellSorteringStigande = true;
+
         let gameMode = 'standard';
         let blitzTimeLimit = 20;
         let blitzTimerInterval = null;
@@ -733,6 +809,7 @@
             stoppaBlitzTimer();
             hasLeftGame = false;
             document.getElementById('winner-modal').style.display = 'none';
+            document.getElementById('stats-modal').style.display = 'none';
             document.getElementById('setup-modal').style.display = 'flex';
             document.getElementById('in-game-menu-btn').style.display = 'none';
             document.getElementById('leave-game-btn').style.display = 'none';
@@ -773,6 +850,8 @@
             stoppaBlitzTimer();
             hasLeftGame = false;
             isMyReadyStatus = false;
+            rumsStatistik = {};
+            rumSpelareKronologisk = [];
             
             if (window.history.replaceState) {
                 window.history.replaceState(null, null, window.location.pathname);
@@ -844,6 +923,108 @@
             document.getElementById('online-status').textContent = "";
         }
 
+        function laddaLokalStatistikForSpelare(namn) {
+            try {
+                let data = localStorage.getItem('cardgame_stats_' + namn);
+                if (data) {
+                    return JSON.parse(data);
+                }
+            } catch(e) {}
+            return { matches: 0, wins: 0, losses: 0 };
+        }
+
+        function sparaLokalStatistikForSpelare(namn, stats) {
+            try {
+                localStorage.setItem('cardgame_stats_' + namn, JSON.stringify(stats));
+            } catch(e) {}
+        }
+
+        function registreraSpelSlutStatistik(vinnarNamn) {
+            if (!gameState.players) return;
+            gameState.players.forEach(p => {
+                if (!p || p.isLeft) return;
+                let namn = p.name;
+                if (!rumsStatistik[namn]) {
+                    rumsStatistik[namn] = laddaLokalStatistikForSpelare(namn);
+                }
+                rumsStatistik[namn].matches++;
+                if (namn === vinnarNamn) {
+                    rumsStatistik[namn].wins++;
+                } else {
+                    rumsStatistik[namn].losses++;
+                }
+                sparaLokalStatistikForSpelare(namn, rumsStatistik[namn]);
+            });
+            if (isHost && spellage === 'online') {
+                broadcastStatsSync();
+            }
+        }
+
+        function broadcastStatsSync() {
+            connections.forEach(c => {
+                try { c.send({ type: 'SYNC_STATS', stats: rumsStatistik, kronologisk: rumSpelareKronologisk }); } catch(e){}
+            });
+        }
+
+        function oppnaStatistikModal() {
+            uppdateraStatistikTabell();
+            document.getElementById('stats-modal').style.display = 'flex';
+        }
+
+        function stangStatistikModal() {
+            document.getElementById('stats-modal').style.display = 'none';
+        }
+
+        function sorteraStatistik(kolumn) {
+            if (aktuellSorteringKolumn === kolumn) {
+                aktuellSorteringStigande = !aktuellSorteringStigande;
+            } else {
+                aktuellSorteringKolumn = kolumn;
+                aktuellSorteringStigande = true;
+            }
+            uppdateraStatistikTabell();
+        }
+
+        function uppdateraStatistikTabell() {
+            let tbody = document.getElementById('stats-table-body');
+            tbody.innerHTML = '';
+
+            let arrayAttSortera = rumSpelareKronologisk.map(namn => {
+                let st = rumsStatistik[namn] || { matches: 0, wins: 0, losses: 0 };
+                return { name: namn, ...st };
+            });
+
+            if (aktuellSorteringKolumn) {
+                arrayAttSortera.sort((a, b) => {
+                    let valA = a[aktuellSorteringKolumn];
+                    let valB = b[aktuellSorteringKolumn];
+                    if (typeof valA === 'string') {
+                        return aktuellSorteringStigande ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                    } else {
+                        return aktuellSorteringStigande ? valA - valB : valB - valA;
+                    }
+                });
+            }
+
+            if (arrayAttSortera.length === 0) {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="4" style="text-align:center; color:#94a3b8;">Ingen statistik registrerad ännu.</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+
+            arrayAttSortera.forEach(item => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:bold; color:#f8fafc;">${item.name}</td>
+                    <td>${item.matches}</td>
+                    <td style="color:#4ade80;">${item.wins}</td>
+                    <td style="color:#f87171;">${item.losses}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         function slumpaNamn(antal) {
             let kopia = [...BOT_NAMES];
             for (let i = kopia.length - 1; i > 0; i--) {
@@ -902,6 +1083,7 @@
         function startaSpel() {
             hasLeftGame = false;
             document.getElementById('setup-modal').style.display = 'none';
+            document.getElementById('stats-modal').style.display = 'none';
             document.getElementById('game-chat-section').style.display = 'none';
             
             gameMode = document.getElementById('single-game-mode').value;
@@ -924,6 +1106,12 @@
             senasteDragInfo = null;
 
             let botNamn = slumpaNamn(antal - 1);
+
+            rumSpelareKronologisk = ["Du", ...botNamn];
+            rumsStatistik = {};
+            rumSpelareKronologisk.forEach(n => {
+                rumsStatistik[n] = laddaLokalStatistikForSpelare(n);
+            });
 
             gameState.players = [{ name: "Du", isBot: false, stock: [], hand: [], discards: [[], [], [], []] }];
             for (let i = 0; i < antal - 1; i++) {
@@ -1295,6 +1483,9 @@
             gameState.gameOver = true;
             gameState.winnerName = vinnarNamn;
             if (customMessage) gameState.customWinMsg = customMessage;
+            
+            registreraSpelSlutStatistik(vinnarNamn);
+
             if (spellage === 'online' && isHost) {
                 broadcastState();
             }
@@ -1389,6 +1580,7 @@
         function atergaTillLobbyLokal() {
             stoppaBlitzTimer();
             hasLeftGame = false;
+            document.getElementById('stats-modal').style.display = 'none';
 
             if (!isHost) {
                 isMyReadyStatus = false;
@@ -1439,6 +1631,10 @@
                     currentRoomId = id;
                     connectedPlayersList = [{ id: 0, name: nick, isHost: true, isReady: true, peerId: id, color: PLAYER_COLORS[0] }];
                     
+                    rumSpelareKronologisk = [nick];
+                    rumsStatistik = {};
+                    rumsStatistik[nick] = laddaLokalStatistikForSpelare(nick);
+
                     document.getElementById('online-step-1').style.display = 'none';
                     document.getElementById('online-step-join').style.display = 'none';
                     document.getElementById('online-lobby-view').style.display = 'block';
@@ -1560,6 +1756,9 @@
             if (isMyReadyStatus) return;
             isMyReadyStatus = true;
             
+            // Stäng omedelbart statistikmodalen om den är öppen för att inte fastna
+            stangStatistikModal();
+
             let btn = document.getElementById('toggle-ready-btn');
             btn.disabled = true;
             btn.textContent = 'Du är REDO! ⏳ (Väntar på start)';
@@ -1684,8 +1883,16 @@
                     let assignedColor = PLAYER_COLORS[newId % PLAYER_COLORS.length];
                     connectedPlayersList.push({ id: newId, name: data.name, isHost: false, isReady: false, peerId: data.peerId, color: assignedColor });
                     
+                    if (!rumSpelareKronologisk.includes(data.name)) {
+                        rumSpelareKronologisk.push(data.name);
+                    }
+                    if (!rumsStatistik[data.name]) {
+                        rumsStatistik[data.name] = laddaLokalStatistikForSpelare(data.name);
+                    }
+
                     conn.send({ type: 'JOIN_ACCEPTED' });
                     broadcastLobby();
+                    broadcastStatsSync();
                     broadcastSystemMessage(`${data.name} har gått med i lobbyn.`);
                 }
             } else if (data.type === 'PLAYER_READY_STATUS' && isHost) {
@@ -1696,6 +1903,15 @@
                 }
             } else if (data.type === 'LOBBY_UPDATE') {
                 connectedPlayersList = data.players;
+                connectedPlayersList.forEach(p => {
+                    if (!rumSpelareKronologisk.includes(p.name)) {
+                        rumSpelareKronologisk.push(p.name);
+                    }
+                    if (!rumsStatistik[p.name]) {
+                        rumsStatistik[p.name] = laddaLokalStatistikForSpelare(p.name);
+                    }
+                });
+
                 let currentNick = document.getElementById('online-nickname').value.trim() || 'Spelare';
                 let myObj = connectedPlayersList.find(p => p.name.toLowerCase() === currentNick.toLowerCase() && p.peerId === peer.id);
                 if (!myObj) {
@@ -1705,6 +1921,9 @@
                     myPlayerId = myObj.id;
                 }
                 uppdateraLobbyUI();
+            } else if (data.type === 'SYNC_STATS') {
+                rumsStatistik = data.stats;
+                rumSpelareKronologisk = data.kronologisk;
             } else if (data.type === 'SYSTEM_MESSAGE') {
                 laggTillChatMeddelande("System", data.text, true, '#38bdf8', data.time || getTimestamp());
             } else if (data.type === 'PLAYER_LEFT_GAME') {
@@ -1717,6 +1936,7 @@
                 hasLeftGame = false;
                 document.getElementById('setup-modal').style.display = 'none';
                 document.getElementById('winner-modal').style.display = 'none';
+                document.getElementById('stats-modal').style.display = 'none';
                 document.getElementById('game-chat-section').style.display = 'flex';
                 document.getElementById('leave-game-btn').style.display = 'inline-block';
                 gameMode = data.gameMode;
@@ -1810,6 +2030,12 @@
                 color: p.color
             }));
 
+            rumSpelareKronologisk = connectedPlayersList.map(p => p.name);
+            rumsStatistik = {};
+            rumSpelareKronologisk.forEach(n => {
+                rumsStatistik[n] = laddaLokalStatistikForSpelare(n);
+            });
+
             gameState.players.forEach(p => {
                 for (let i = 0; i < stockSize; i++) p.stock.push(gameState.deck.pop());
             });
@@ -1817,6 +2043,7 @@
             for (let i = 0; i < gameState.numPlayers; i++) fyllHand(i);
 
             document.getElementById('setup-modal').style.display = 'none';
+            document.getElementById('stats-modal').style.display = 'none';
             document.getElementById('game-chat-section').style.display = 'flex';
             document.getElementById('leave-game-btn').style.display = 'inline-block';
             
@@ -1832,6 +2059,7 @@
                     });
                 } catch(e){}
             });
+            broadcastStatsSync();
             uppdateraUI();
             visaToast("Spelet startar!");
         }
