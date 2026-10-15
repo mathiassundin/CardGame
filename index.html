@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame v.8</title>
+    <title>CardGame v.9</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -414,7 +414,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame v.8</h2>
+            <h2>CardGame v.9</h2>
 
             <div id="setup-view-mode">
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
@@ -538,7 +538,8 @@
                     </div>
                 </div>
 
-                <div id="online-status" style="font-size:0.8rem; color:#38bdf8; margin-top:0.5rem;"></div>
+                <!-- Rött felmeddelande i anslutningsvyn istället för popup -->
+                <div id="online-status" style="font-size:0.85rem; color:#f87171; font-weight:bold; margin-top:0.5rem; text-align:center;"></div>
             </div>
         </div>
     </div>
@@ -558,7 +559,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame v.8</h1>
+        <h1>CardGame v.9</h1>
     </header>
 
     <main class="game-container">
@@ -651,7 +652,6 @@
         let hasLeftGame = false;
         let isMyReadyStatus = false;
 
-        // Blitz timer variabler
         let gameMode = 'standard';
         let blitzTimeLimit = 20;
         let blitzTimerInterval = null;
@@ -689,7 +689,6 @@
             document.getElementById('leave-game-btn').style.display = 'none';
             document.getElementById('game-chat-section').style.display = 'none';
             
-            // Kolla om användaren kom hit via en rumslänk (?room=...)
             const urlParams = new URLSearchParams(window.location.search);
             const roomParam = urlParams.get('room');
             if (roomParam) {
@@ -699,7 +698,6 @@
                 document.getElementById('online-room-id').value = roomParam;
                 document.getElementById('direct-invite-notice').style.display = 'block';
                 
-                // Dölj knappen "Skapa rum" helt om man ansluter via länk
                 document.getElementById('btn-create-room').style.display = 'none';
                 let btnGamed = document.getElementById('btn-join-room');
                 if (btnGamed) {
@@ -714,7 +712,7 @@
         function anslutMedLänkDirekt(roomParam) {
             let nick = document.getElementById('online-nickname').value.trim();
             if (!nick) {
-                alert("Vänligen ange ditt spelarnamn först!");
+                document.getElementById('online-status').textContent = "Vänligen ange ditt spelarnamn först!";
                 return;
             }
             document.getElementById('online-room-id').value = roomParam;
@@ -740,7 +738,6 @@
             document.getElementById('direct-invite-notice').style.display = 'none';
             document.getElementById('online-status').textContent = '';
             
-            // Återställ knappar för normalt läge
             document.getElementById('btn-create-room').style.display = 'block';
             let btnGamed = document.getElementById('btn-join-room');
             if (btnGamed) {
@@ -776,9 +773,10 @@
         function valjOnlineHandling(handling) {
             let nick = document.getElementById('online-nickname').value.trim();
             if (!nick) {
-                alert("Vänligen ange ett spelarnamn först!");
+                document.getElementById('online-status').textContent = "Vänligen ange ett spelarnamn först!";
                 return;
             }
+            document.getElementById('online-status').textContent = "";
             if (handling === 'skapa') {
                 skapaOnlineRum();
             } else if (handling === 'gamed') {
@@ -790,6 +788,7 @@
         function tillbakaTillOnlineSteg1() {
             document.getElementById('online-step-join').style.display = 'none';
             document.getElementById('online-step-1').style.display = 'block';
+            document.getElementById('online-status').textContent = "";
         }
 
         function slumpaNamn(antal) {
@@ -847,7 +846,6 @@
             return k.type === 'joker' ? 'J' : String(k.value);
         }
 
-        /* START SINGLEPLAYER */
         function startaSpel() {
             hasLeftGame = false;
             document.getElementById('setup-modal').style.display = 'none';
@@ -936,7 +934,6 @@
             }
         }
 
-        /* SPELMOTOR LOGIK */
         function executePlayCard(pIdx, source, index, centerIndex) {
             let p = gameState.players[pIdx];
             let kortAttLagga = null;
@@ -1375,7 +1372,6 @@
             }
         }
 
-        /* ONLINE PEERJS LOBBY & MULTIPLAYER (UPP TILL 8 SPELARE) */
         function skapaOnlineRum() {
             let nick = document.getElementById('online-nickname').value.trim() || 'Spelare 1';
             let status = document.getElementById('online-status');
@@ -1399,41 +1395,44 @@
                     
                     uppdateraLobbyUI();
                     laggTillChatMeddelande("System", `${nick} har skapat rummet.`, true);
-                    status.textContent = "Rum skapat! Väntar på att alla spelare ska trycka REDO.";
+                    status.textContent = "";
                 });
 
                 peer.on('connection', (conn) => {
-                    if (connectedPlayersList.length >= 8) {
-                        conn.on('open', () => {
+                    conn.on('open', () => {
+                        if (connectedPlayersList.length >= 8) {
                             conn.send({ type: 'ROOM_FULL' });
                             setTimeout(() => conn.close(), 500);
-                        });
-                        return;
-                    }
-
-                    connections.push(conn);
-                    conn.on('data', (data) => hanteraInkommandeData(data, conn));
-                    conn.on('close', () => {
-                        let leftPlayer = connectedPlayersList.find(p => p.peerId === conn.peer);
-                        connections = connections.filter(c => c !== conn);
-                        connectedPlayersList = connectedPlayersList.filter(p => p.peerId !== conn.peer);
-                        if (leftPlayer) {
-                            broadcastLobby();
-                            if (gameState.players && gameState.players.length > 0 && !gameState.gameOver) {
-                                let targetPl = gameState.players.find(pl => pl.name === leftPlayer.name);
-                                if (targetPl && !targetPl.isLeft) {
-                                    let targetIdx = gameState.players.indexOf(targetPl);
-                                    hanteraSpelareLamnade(leftPlayer.name, targetIdx);
-                                    connections.forEach(c => c.send({ 
-                                        type: 'PLAYER_LEFT_GAME', 
-                                        playerName: leftPlayer.name, 
-                                        playerId: targetIdx 
-                                    }));
-                                }
-                            } else {
-                                broadcastSystemMessage(`${leftPlayer.name} har lämnat lobbyn.`);
-                            }
+                            return;
                         }
+
+                        if (!connections.includes(conn)) {
+                            connections.push(conn);
+                        }
+
+                        conn.on('data', (data) => hanteraInkommandeData(data, conn));
+                        conn.on('close', () => {
+                            let leftPlayer = connectedPlayersList.find(p => p.peerId === conn.peer);
+                            connections = connections.filter(c => c !== conn);
+                            connectedPlayersList = connectedPlayersList.filter(p => p.peerId !== conn.peer);
+                            if (leftPlayer) {
+                                broadcastLobby();
+                                if (gameState.players && gameState.players.length > 0 && !gameState.gameOver) {
+                                    let targetPl = gameState.players.find(pl => pl.name === leftPlayer.name);
+                                    if (targetPl && !targetPl.isLeft) {
+                                        let targetIdx = gameState.players.indexOf(targetPl);
+                                        hanteraSpelareLamnade(leftPlayer.name, targetIdx);
+                                        connections.forEach(c => c.send({ 
+                                            type: 'PLAYER_LEFT_GAME', 
+                                            playerName: leftPlayer.name, 
+                                            playerId: targetIdx 
+                                        }));
+                                    }
+                                } else {
+                                    broadcastSystemMessage(`${leftPlayer.name} har lämnat lobbyn.`);
+                                }
+                            }
+                        });
                     });
                 });
 
@@ -1451,7 +1450,10 @@
             let status = document.getElementById('online-status');
 
             if (!roomId) return alert("Ange en giltig rumskod!");
-            if (!nick) return alert("Ange ditt spelarnamn först!");
+            if (!nick) {
+                status.textContent = "Ange ditt spelarnamn först!";
+                return;
+            }
 
             status.textContent = "Söker efter rum...";
 
@@ -1477,7 +1479,6 @@
                     });
 
                     conn.on('close', () => {
-                        // Om host lämnar spelet stängs anslutningen för klienten
                         if (!hasLeftGame) {
                             alert("Värden (host) har lämnat rummet. Du skickas till huvudmenyn.");
                             visaHuvudmeny();
@@ -1567,10 +1568,12 @@
             let status = document.getElementById('online-status');
 
             if (data.type === 'NAME_TAKEN') {
-                alert(`Namnet "${data.name}" är redan upptaget i detta rum! Vänligen ange ett annat spelarnamn.`);
+                // Skriv ut felmeddelandet i rött direkt i anslutningsvyn utan popup
                 if (status) status.textContent = `Namnet "${data.name}" är upptaget. Ändra namn och försök igen.`;
-                visaOnlineSetup();
+                document.getElementById('online-step-1').style.display = 'block';
+                document.getElementById('online-step-join').style.display = 'none';
             } else if (data.type === 'JOIN_ACCEPTED') {
+                if (status) status.textContent = "";
                 document.getElementById('online-step-1').style.display = 'none';
                 document.getElementById('online-step-join').style.display = 'none';
                 document.getElementById('online-lobby-view').style.display = 'block';
@@ -1583,8 +1586,6 @@
                 toggleBtn.disabled = false;
                 toggleBtn.textContent = 'Jag är REDO 👍';
                 toggleBtn.style.background = '#16a34a';
-
-                if (status) status.textContent = "Ansluten! Klicka på 'Jag är REDO' för att göra dig klar.";
             } else if (data.type === 'HOST_LEFT') {
                 alert("Värden (host) har stängt rummet. Du skickas till huvudmenyn.");
                 visaHuvudmeny();
@@ -1763,7 +1764,6 @@
             }
         }
 
-        /* CHATT-VALIDERING (INGA EMOJIS, INGA SCRIPT-TAGGAR, ENBART REN TEXT) */
         function valideraOchRensaText(text) {
             if (/[<>]/g.test(text)) return null;
             
@@ -1870,7 +1870,6 @@
                 document.getElementById('local-player-section').classList.remove('active-player-board');
             }
 
-            // Motståndare
             let oppContainer = document.getElementById('opponents-container');
             oppContainer.innerHTML = '';
             for (let i = 0; i < gameState.players.length; i++) {
@@ -1932,7 +1931,6 @@
                 oppContainer.appendChild(div);
             }
 
-            // Mitthögar
             let centerContainer = document.getElementById('center-piles-container');
             centerContainer.innerHTML = '';
             gameState.centerPiles.forEach((hog, index) => {
@@ -1945,7 +1943,6 @@
                 centerContainer.appendChild(btn);
             });
 
-            // Egen Stock
             document.getElementById('player-stock-count').textContent = 'Stock: ' + user.stock.length;
             let pStockTopEl = document.getElementById('player-stock-top');
             let topUserStock = user.stock.length > 0 ? user.stock[user.stock.length - 1] : null;
@@ -1954,7 +1951,6 @@
             pStockTopEl.className = `card ${getCardClass(topUserStock)} ${isStockSelected ? 'selected' : ''}`;
             pStockTopEl.innerHTML = renderCardHTML(topUserStock, 'Stock');
 
-            // Egna Slänghögar
             let discardsContainer = document.getElementById('player-discards-container');
             discardsContainer.innerHTML = '';
             user.discards.forEach((hog, index) => {
@@ -1986,7 +1982,6 @@
                 discardsContainer.appendChild(wrap);
             });
 
-            // Egen Hand
             let handContainer = document.getElementById('player-hand-container');
             handContainer.innerHTML = '';
             user.hand.forEach((kort, index) => {
