@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame v.10</title>
+    <title>CardGame v.11</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -409,6 +409,11 @@
             font-style: italic;
             color: #94a3b8;
         }
+        .chat-timestamp {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-right: 4px;
+        }
     </style>
 </head>
 <body>
@@ -416,9 +421,9 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame v.10</h2>
+            <h2>CardGame v.11</h2>
 
-            <!-- Inbyggda regler direkt i startmenyn -->
+            <!-- Inbyggda regler i startmenyn -->
             <details style="text-align: left; margin-bottom: 0.75rem;">
                 <summary>Regler & Hur man spelar 📖</summary>
                 <div style="padding-top:0.5rem; line-height:1.4; font-size: 0.8rem; color: #94a3b8;">
@@ -552,7 +557,6 @@
                     </div>
                 </div>
 
-                <!-- Endast röd text för felmeddelanden -->
                 <div id="online-status" style="font-size:0.85rem; color:#f87171; font-weight:bold; margin-top:0.5rem; text-align:center;"></div>
             </div>
         </div>
@@ -573,7 +577,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame v.10</h1>
+        <h1>CardGame v.11</h1>
     </header>
 
     <main class="game-container">
@@ -670,6 +674,13 @@
             winnerName: null
         };
 
+        function getTimestamp() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            return `${hh}:${mm}`;
+        }
+
         function andraSinglelageVal() {
             let mode = document.getElementById('single-game-mode').value;
             document.getElementById('single-blitz-container').style.display = (mode === 'blitz') ? 'block' : 'none';
@@ -745,12 +756,16 @@
                 btnGamed.onclick = () => valjOnlineHandling('gamed');
             }
 
+            if (hostConnection) {
+                try { hostConnection.close(); } catch(e){}
+                hostConnection = null;
+            }
+
             if (peer) {
                 try { peer.destroy(); } catch(e){}
                 peer = null;
             }
             connections = [];
-            hostConnection = null;
             connectedPlayersList = [];
             currentRoomId = '';
         }
@@ -1394,7 +1409,7 @@
                     document.getElementById('ready-button-container').style.display = 'none';
                     
                     uppdateraLobbyUI();
-                    laggTillChatMeddelande("System", `${nick} har skapat rummet.`, true);
+                    laggTillChatMeddelande("System", `${nick} har skapat rummet.`, true, '#38bdf8', getTimestamp());
                     status.textContent = "";
                 });
 
@@ -1406,15 +1421,12 @@
                             return;
                         }
 
-                        if (!connections.includes(conn)) {
-                            connections.push(conn);
-                        }
-
                         conn.on('data', (data) => hanteraInkommandeData(data, conn));
                         conn.on('close', () => {
                             let leftPlayer = connectedPlayersList.find(p => p.peerId === conn.peer);
                             connections = connections.filter(c => c !== conn);
                             connectedPlayersList = connectedPlayersList.filter(p => p.peerId !== conn.peer);
+                            
                             if (leftPlayer) {
                                 broadcastLobby();
                                 if (gameState.players && gameState.players.length > 0 && !gameState.gameOver) {
@@ -1460,10 +1472,18 @@
 
             status.textContent = "Söker efter rum...";
 
+            // Stäng tidigare anslutning om den finns för att undvika spökevents hos värden
+            if (hostConnection) {
+                try { hostConnection.close(); } catch(e){}
+                hostConnection = null;
+            }
+
             try {
-                if (peer && !peer.destroyed) peer.destroy();
-                peer = new Peer();
-                peer.on('open', (myId) => {
+                if (!peer || peer.destroyed) {
+                    peer = new Peer();
+                }
+
+                let executeConnect = () => {
                     let conn = peer.connect(roomId);
                     isHost = false;
                     isMyReadyStatus = false;
@@ -1472,7 +1492,7 @@
 
                     conn.on('open', () => {
                         connections = [conn];
-                        conn.send({ type: 'JOIN_LOBBY', name: nick, peerId: myId });
+                        conn.send({ type: 'JOIN_LOBBY', name: nick, peerId: peer.id });
                     });
 
                     conn.on('data', (data) => hanteraInkommandeData(data, conn));
@@ -1482,13 +1502,18 @@
                     });
 
                     conn.on('close', () => {
-                        if (!hasLeftGame) {
-                            // Ersatt alert med textmeddelande i statusfältet eller lobbyn om host lämnar
+                        if (!hasLeftGame && document.getElementById('online-lobby-view').style.display === 'block') {
                             status.textContent = "Värden (host) har lämnat rummet.";
                             setTimeout(() => visaHuvudmeny(), 1500);
                         }
                     });
-                });
+                };
+
+                if (peer.id) {
+                    executeConnect();
+                } else {
+                    peer.on('open', () => executeConnect());
+                }
             } catch (e) {
                 status.textContent = "Kunde inte ansluta till rummet.";
             }
@@ -1562,9 +1587,10 @@
         }
 
         function broadcastSystemMessage(text) {
-            laggTillChatMeddelande("System", text, true);
+            const time = getTimestamp();
+            laggTillChatMeddelande("System", text, true, '#38bdf8', time);
             connections.forEach(c => {
-                try { c.send({ type: 'SYSTEM_MESSAGE', text: text }); } catch(e){}
+                try { c.send({ type: 'SYSTEM_MESSAGE', text: text, time: time }); } catch(e){}
             });
         }
 
@@ -1601,10 +1627,15 @@
 
                 if (nameExists) {
                     conn.send({ type: 'NAME_TAKEN', name: data.name });
+                    // Stäng anslutningen för att inte trigga felet om spelare byter namn och försöker igen
+                    setTimeout(() => { try { conn.close(); } catch(e){} }, 200);
                     return;
                 }
 
                 if (connectedPlayersList.length < 8) {
+                    if (!connections.includes(conn)) {
+                        connections.push(conn);
+                    }
                     let newId = connectedPlayersList.length;
                     let assignedColor = PLAYER_COLORS[newId % PLAYER_COLORS.length];
                     connectedPlayersList.push({ id: newId, name: data.name, isHost: false, isReady: false, peerId: data.peerId, color: assignedColor });
@@ -1631,7 +1662,7 @@
                 }
                 uppdateraLobbyUI();
             } else if (data.type === 'SYSTEM_MESSAGE') {
-                laggTillChatMeddelande("System", data.text, true);
+                laggTillChatMeddelande("System", data.text, true, '#38bdf8', data.time || getTimestamp());
             } else if (data.type === 'PLAYER_LEFT_GAME') {
                 if (!isHost) {
                     hanteraSpelareLamnade(data.playerName, data.playerId);
@@ -1678,7 +1709,7 @@
                     uppdateraUI();
                 }
             } else if (data.type === 'CHAT_MESSAGE') {
-                laggTillChatMeddelande(data.sender, data.text, false, data.color);
+                laggTillChatMeddelande(data.sender, data.text, false, data.color, data.time || getTimestamp());
                 if (isHost) {
                     connections.forEach(c => {
                         if (c !== conn) {
@@ -1807,9 +1838,10 @@
                 senderColor = PLAYER_COLORS[0];
             }
 
-            laggTillChatMeddelande(senderName, safeText, false, senderColor);
+            const time = getTimestamp();
+            laggTillChatMeddelande(senderName, safeText, false, senderColor, time);
 
-            let msgPayload = { type: 'CHAT_MESSAGE', sender: senderName, text: safeText, color: senderColor };
+            let msgPayload = { type: 'CHAT_MESSAGE', sender: senderName, text: safeText, color: senderColor, time: time };
 
             if (spellage === 'online') {
                 if (isHost) {
@@ -1824,16 +1856,16 @@
             input.value = '';
         }
 
-        function laggTillChatMeddelande(sender, text, isSystem = false, color = '#38bdf8') {
+        function laggTillChatMeddelande(sender, text, isSystem = false, color = '#38bdf8', time = getTimestamp()) {
             let chatBoxes = [document.getElementById('chat-messages'), document.getElementById('game-chat-messages')];
             chatBoxes.forEach(chatBox => {
-                if (!chatBox || chatBox.offsetParent === null) return;
+                if (!chatBox) return;
                 let div = document.createElement('div');
                 div.className = 'chat-message';
                 if (isSystem) {
-                    div.innerHTML = `<span class="chat-system-message">${text}</span>`;
+                    div.innerHTML = `<span class="chat-timestamp">[${time}]</span> <span class="chat-system-message">${text}</span>`;
                 } else {
-                    div.innerHTML = `<span style="font-weight: bold; color: ${color};">${sender}:</span> <span style="color: #ffffff;">${text}</span>`;
+                    div.innerHTML = `<span class="chat-timestamp">[${time}]</span> <span style="font-weight: bold; color: ${color};">${sender}:</span> <span style="color: #ffffff;">${text}</span>`;
                 }
                 chatBox.appendChild(div);
                 chatBox.scrollTop = chatBox.scrollHeight;
