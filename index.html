@@ -575,8 +575,8 @@
                 </div>
 
                 <div id="online-step-join" style="display: none; margin-top: 0.5rem;">
-                    <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Rumskod:</label>
-                    <input type="text" id="online-room-id" placeholder="Ange Rumskod">
+                    <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Rumskod (5 tecken):</label>
+                    <input type="text" id="online-room-id" placeholder="t.ex. GV7F3" maxlength="5" style="text-transform: uppercase;">
                     <div style="display: flex; gap: 0.5rem;">
                         <button class="btn" style="background: #334155; flex: 1;" onclick="tillbakaTillOnlineSteg1()">Tillbaka</button>
                         <button id="btn-submit-join" class="btn" style="flex: 2; background:#16a34a;" onclick="anslutTillRum()">Anslut till rum 🚪</button>
@@ -586,7 +586,7 @@
                 <div id="online-lobby-view" style="display: none;">
                     <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.25rem;">Dela rummet med kod eller länk:</div>
                     <div style="display:flex; gap:0.4rem; margin-bottom:0.75rem;">
-                        <input type="text" id="display-room-code" readonly style="margin:0; text-align:center; font-weight:bold; color:#f59e0b; font-size:1rem; flex:1;">
+                        <input type="text" id="display-room-code" readonly style="margin:0; text-align:center; font-weight:bold; color:#f59e0b; font-size:1.1rem; flex:1; letter-spacing: 2px;">
                         
                         <div class="copy-button-container">
                             <span id="copy-code-notice" class="copy-notice-overlay">Du har kopierat kod</span>
@@ -812,6 +812,15 @@
             winnerName: null
         };
 
+        function genereraKortKod() {
+            const tecken = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Utelämnat förvirrande tecken som O, 0, I, 1
+            let kod = "";
+            for (let i = 0; i < 5; i++) {
+                kod += tecken.charAt(Math.floor(Math.random() * tecken.length));
+            }
+            return kod;
+        }
+
         function getTimestamp() {
             const now = new Date();
             const hh = String(now.getHours()).padStart(2, '0');
@@ -898,7 +907,7 @@
                 document.getElementById('online-status').textContent = "Vänligen ange ditt spelarnamn först!";
                 return;
             }
-            document.getElementById('online-room-id').value = roomParam;
+            document.getElementById('online-room-id').value = roomParam.toUpperCase();
             anslutTillRum();
         }
 
@@ -1679,9 +1688,11 @@
             let status = document.getElementById('online-status');
             status.textContent = "Skapar online-rum...";
 
+            let shortRoomId = genereraKortKod();
+
             try {
                 if (peer && !peer.destroyed) peer.destroy();
-                peer = new Peer();
+                peer = new Peer(shortRoomId);
                 peer.on('open', (id) => {
                     isHost = true;
                     myPlayerId = 0;
@@ -1741,7 +1752,12 @@
                 });
 
                 peer.on('error', (err) => {
-                    status.textContent = "Kunde inte ansluta till nätverket: " + err.type;
+                    if (err.type === 'unavailable-id') {
+                        // Om koden mot förmodan krockar, försök igen direkt
+                        skapaOnlineRum();
+                    } else {
+                        status.textContent = "Kunde inte ansluta till nätverket: " + err.type;
+                    }
                 });
             } catch (e) {
                 status.textContent = "Fel vid skapande av rum.";
@@ -1749,12 +1765,12 @@
         }
 
         function anslutTillRum() {
-            let roomId = document.getElementById('online-room-id').value.trim();
+            let roomId = document.getElementById('online-room-id').value.trim().toUpperCase();
             let nick = document.getElementById('online-nickname').value.trim();
             let status = document.getElementById('online-status');
 
-            if (!roomId) {
-                status.textContent = "Ange en giltig rumskod!";
+            if (!roomId || roomId.length !== 5) {
+                status.textContent = "Ange en giltig rumskod på 5 tecken!";
                 return;
             }
             if (!nick) {
