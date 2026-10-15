@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame v.6</title>
+    <title>CardGame v.7</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -414,7 +414,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame v.6</h2>
+            <h2>CardGame v.7</h2>
 
             <div id="setup-view-mode">
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
@@ -557,7 +557,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame v.6</h1>
+        <h1>CardGame v.7</h1>
     </header>
 
     <main class="game-container">
@@ -1298,6 +1298,8 @@
 
         function hanteraSpelareLamnade(playerName, playerId) {
             let p = gameState.players[playerId];
+            let varDetDenSpelarensTur = (gameState.turnIndex === playerId);
+
             if (p) {
                 p.isLeft = true;
                 if (p.stock) gameState.recycleDeck.push(...p.stock);
@@ -1318,7 +1320,8 @@
                 return;
             }
 
-            if (gameState.turnIndex === playerId && !gameState.gameOver) {
+            // Om det var den lämnande spelarens tur, hoppa direkt vidare till nästa spelare!
+            if (varDetDenSpelarensTur && !gameState.gameOver) {
                 nastaTur();
             }
 
@@ -1331,6 +1334,18 @@
         function atergaTillLobbyLokal() {
             stoppaBlitzTimer();
             hasLeftGame = false;
+
+            // Återställ Redo-status för icke-host klienter
+            if (!isHost) {
+                isMyReadyStatus = false;
+                let toggleBtn = document.getElementById('toggle-ready-btn');
+                if (toggleBtn) {
+                    toggleBtn.disabled = false;
+                    toggleBtn.textContent = 'Jag är REDO 👍';
+                    toggleBtn.style.background = '#16a34a';
+                }
+            }
+
             document.getElementById('winner-modal').style.display = 'none';
             document.getElementById('setup-modal').style.display = 'flex';
             document.getElementById('online-step-1').style.display = 'none';
@@ -1339,11 +1354,17 @@
             document.getElementById('game-chat-section').style.display = 'none';
             document.getElementById('in-game-menu-btn').style.display = 'none';
             document.getElementById('leave-game-btn').style.display = 'none';
+            
             uppdateraLobbyUI();
         }
 
         function atergaTillLobbyFranVinst() {
             if (spellage === 'online' && isHost) {
+                // Återställ redo-status för alla anslutna klienter i listan
+                connectedPlayersList.forEach(p => {
+                    if (!p.isHost) p.isReady = false;
+                });
+                broadcastLobby();
                 connections.forEach(c => c.send({ type: 'RETURN_TO_LOBBY' }));
                 atergaTillLobbyLokal();
             } else if (spellage === 'online') {
@@ -1431,6 +1452,9 @@
             status.textContent = "Söker efter rum...";
 
             try {
+                if (peer && !peer.destroyed) {
+                    peer.destroy();
+                }
                 peer = new Peer();
                 peer.on('open', (myId) => {
                     let conn = peer.connect(roomId);
@@ -1451,8 +1475,10 @@
                     });
 
                     conn.on('close', () => {
-                        alert("Anslutningen stängdes av värden.");
-                        visaHuvudmeny();
+                        // Stäng bara anslutning om användaren aktivt lämnat
+                        if (hasLeftGame) {
+                            visaHuvudmeny();
+                        }
                     });
                 });
             } catch (e) {
@@ -1540,7 +1566,7 @@
             if (data.type === 'NAME_TAKEN') {
                 alert(`Namnet "${data.name}" är redan upptaget i detta rum! Vänligen ange ett annat spelarnamn.`);
                 if (status) status.textContent = `Namnet "${data.name}" är upptaget. Ändra namn och försök igen.`;
-                try { conn.close(); } catch(e){}
+                // Behåll spelaren på namnsidan så de slipper klicka på länken igen!
                 visaOnlineSetup();
             } else if (data.type === 'JOIN_ACCEPTED') {
                 document.getElementById('online-step-1').style.display = 'none';
@@ -1566,7 +1592,6 @@
 
                 if (nameExists) {
                     conn.send({ type: 'NAME_TAKEN', name: data.name });
-                    setTimeout(() => conn.close(), 500);
                     return;
                 }
 
@@ -1737,7 +1762,7 @@
         function valideraOchRensaText(text) {
             if (/[<>]/g.test(text)) return null;
             
-            const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
+            const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
             if (emojiRegex.test(text)) return null;
 
             let div = document.createElement('div');
