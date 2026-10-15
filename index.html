@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame v.4</title>
+    <title>CardGame v.5</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -414,7 +414,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame v.4</h2>
+            <h2>CardGame v.5</h2>
 
             <div id="setup-view-mode">
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
@@ -460,8 +460,9 @@
                 <h3 style="color: #38bdf8; margin-bottom: 0.75rem; font-size: 1.1rem;">Online Multiplayer (2-8 spelare)</h3>
                 
                 <div id="online-step-1">
+                    <div id="direct-invite-notice" style="display:none; color:#f59e0b; font-size:0.85rem; margin-bottom:0.5rem; font-weight:bold;">📩 Du har anslutit via inbjudningslänk! Ange ditt eget namn nedan:</div>
                     <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Ditt spelarnamn:</label>
-                    <input type="text" id="online-nickname" placeholder="Ange ditt namn" value="Spelare 1">
+                    <input type="text" id="online-nickname" placeholder="Ange ditt namn" value="">
                     <div style="display:flex; gap:0.5rem; margin-top: 0.5rem;">
                         <button class="btn" style="background: #334155; flex: 1;" onclick="visaHuvudmeny()">Tillbaka</button>
                         <button class="btn" style="flex: 2;" onclick="valjOnlineHandling('skapa')">Skapa rum</button>
@@ -470,7 +471,6 @@
                 </div>
 
                 <div id="online-step-join" style="display: none; margin-top: 0.5rem;">
-                    <div id="direct-invite-notice" style="display:none; color:#f59e0b; font-size:0.85rem; margin-bottom:0.5rem; font-weight:bold;">📩 Du har blivit inbjuden via rumslänk!</div>
                     <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Rumskod:</label>
                     <input type="text" id="online-room-id" placeholder="Ange Rumskod">
                     <div style="display: flex; gap: 0.5rem;">
@@ -557,7 +557,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame v.4</h1>
+        <h1>CardGame v.5</h1>
     </header>
 
     <main class="game-container">
@@ -693,13 +693,30 @@
             const roomParam = urlParams.get('room');
             if (roomParam) {
                 visaOnlineSetup();
-                document.getElementById('online-step-1').style.display = 'none';
-                document.getElementById('online-step-join').style.display = 'block';
+                // Fyll i rumskoden i det dolda/separata fältet för anslutning
+                document.getElementById('online-step-1').style.display = 'block';
+                document.getElementById('online-step-join').style.display = 'none';
                 document.getElementById('online-room-id').value = roomParam;
                 document.getElementById('direct-invite-notice').style.display = 'block';
+                // Ändra knappen "Gå med" så den ansluter direkt med länkat rum
+                let btnGamed = document.querySelector('#online-step-1 button:nth-of-type(3)');
+                if (btnGamed) {
+                    btnGamed.textContent = "Anslut till länk 🔗";
+                    btnGamed.onclick = () => anslutMedLänkDirekt(roomParam);
+                }
             } else {
                 visaHuvudmeny();
             }
+        }
+
+        function anslutMedLänkDirekt(roomParam) {
+            let nick = document.getElementById('online-nickname').value.trim();
+            if (!nick) {
+                alert("Vänligen ange ditt spelarnamn först!");
+                return;
+            }
+            document.getElementById('online-room-id').value = roomParam;
+            anslutTillRum();
         }
 
         function visaHuvudmeny() {
@@ -708,7 +725,6 @@
             hasLeftGame = false;
             isMyReadyStatus = false;
             
-            // Rensa URL parametrar om man går till huvudmenyn
             if (window.history.replaceState) {
                 window.history.replaceState(null, null, window.location.pathname);
             }
@@ -722,6 +738,13 @@
             document.getElementById('direct-invite-notice').style.display = 'none';
             document.getElementById('online-status').textContent = '';
             
+            // Återställ knapptext om man klickar tillbaka
+            let btnGamed = document.querySelector('#online-step-1 button:nth-of-type(3)');
+            if (btnGamed) {
+                btnGamed.textContent = "Gå med";
+                btnGamed.onclick = () => valjOnlineHandling('gamed');
+            }
+
             if (peer) {
                 try { peer.destroy(); } catch(e){}
                 peer = null;
@@ -1259,7 +1282,6 @@
             let myUser = gameState.players[myPlayerId];
             let myName = myUser ? myUser.name : "En spelare";
 
-            // Stäng av chatt och kontroller direkt för den som lämnar
             document.getElementById('game-chat-section').style.display = 'none';
             document.getElementById('leave-game-btn').style.display = 'none';
 
@@ -1270,7 +1292,6 @@
                     connections.forEach(c => c.send(msgPayload));
                 } else if (hostConnection) {
                     hostConnection.send(msgPayload);
-                    // KASTA UT TILL ABSOLUT BÖRJAN AV SPELET
                     visaHuvudmeny();
                 }
             } else {
@@ -1345,7 +1366,6 @@
                     isHost = true;
                     myPlayerId = 0;
                     currentRoomId = id;
-                    // Värden sätts automatisk som REDO
                     connectedPlayersList = [{ id: 0, name: nick, isHost: true, isReady: true, peerId: id, color: PLAYER_COLORS[0] }];
                     
                     document.getElementById('online-step-1').style.display = 'none';
@@ -1353,7 +1373,7 @@
                     document.getElementById('online-lobby-view').style.display = 'block';
                     document.getElementById('display-room-code').value = id;
                     document.getElementById('host-controls').style.display = 'block';
-                    document.getElementById('ready-button-container').style.display = 'none'; // Dölj redo-knapp för host
+                    document.getElementById('ready-button-container').style.display = 'none';
                     
                     uppdateraLobbyUI();
                     laggTillChatMeddelande("System", `${nick} har skapat rummet.`, true);
@@ -1405,10 +1425,12 @@
 
         function anslutTillRum() {
             let roomId = document.getElementById('online-room-id').value.trim();
-            let nick = document.getElementById('online-nickname').value.trim() || 'Spelare 2';
+            let nick = document.getElementById('online-nickname').value.trim();
             let status = document.getElementById('online-status');
 
             if (!roomId) return alert("Ange en giltig rumskod!");
+            if (!nick) return alert("Ange ditt spelarnamn först!");
+
             status.textContent = "Söker efter rum...";
 
             try {
@@ -1457,7 +1479,7 @@
         }
 
         function markeraMigSomRedo() {
-            if (isMyReadyStatus) return; // Kan inte dras tillbaka när man väl tryckt
+            if (isMyReadyStatus) return;
             isMyReadyStatus = true;
             
             let btn = document.getElementById('toggle-ready-btn');
@@ -1555,11 +1577,12 @@
                 connectedPlayersList = data.players;
                 let currentNick = document.getElementById('online-nickname').value.trim() || 'Spelare';
                 let myObj = connectedPlayersList.find(p => p.name === currentNick && p.peerId === peer.id);
+                if (!myObj) {
+                    // Hitta via peer ID om namnet inte matchar exakt
+                    myObj = connectedPlayersList.find(p => p.peerId === peer.id);
+                }
                 if (myObj) {
                     myPlayerId = myObj.id;
-                } else {
-                    let fallback = connectedPlayersList[connectedPlayersList.length - 1];
-                    if (fallback) myPlayerId = fallback.id;
                 }
                 uppdateraLobbyUI();
             } else if (data.type === 'SYSTEM_MESSAGE') {
@@ -1579,6 +1602,14 @@
                 gameMode = data.gameMode;
                 blitzTimeLimit = data.blitzTimeLimit;
                 gameState = data.gameState;
+                
+                // Sätt korrekt myPlayerId baserat på peer ID i spelet
+                let currentNick = document.getElementById('online-nickname').value.trim();
+                let matchingPl = gameState.players.findIndex(pl => pl.name === currentNick);
+                if (matchingPl !== -1) {
+                    myPlayerId = matchingPl;
+                }
+
                 startaBlitzTimerOmKrävs();
                 uppdateraUI();
                 visaToast("Spelet har startat!");
