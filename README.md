@@ -1,2 +1,1 @@
-# CardGame
-CardGame copy
+# StackOut
