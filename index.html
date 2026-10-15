@@ -1015,20 +1015,30 @@
 
         function registreraSpelSlutStatistik(vinnarNamn) {
             if (!gameState.players) return;
+
+            // I online-läge ska endast hosten beräkna och ansvara för rummets statistik
+            if (spellage === 'online' && !isHost) return;
+
             gameState.players.forEach(p => {
                 if (!p || p.isLeft) return;
                 let namn = p.name;
+                
                 if (!rumsStatistik[namn]) {
-                    rumsStatistik[namn] = laddaLokalStatistikForSpelare(namn);
+                    rumsStatistik[namn] = spellage === 'online' ? { matches: 0, wins: 0, losses: 0 } : laddaLokalStatistikForSpelare(namn);
                 }
+                
                 rumsStatistik[namn].matches++;
                 if (namn === vinnarNamn) {
                     rumsStatistik[namn].wins++;
                 } else {
                     rumsStatistik[namn].losses++;
                 }
-                sparaLokalStatistikForSpelare(namn, rumsStatistik[namn]);
+
+                if (spellage !== 'online') {
+                    sparaLokalStatistikForSpelare(namn, rumsStatistik[namn]);
+                }
             });
+
             if (isHost && spellage === 'online') {
                 broadcastStatsSync();
             }
@@ -1710,7 +1720,7 @@
                     
                     rumSpelareKronologisk = [nick];
                     rumsStatistik = {};
-                    rumsStatistik[nick] = laddaLokalStatistikForSpelare(nick);
+                    rumsStatistik[nick] = { matches: 0, wins: 0, losses: 0 };
 
                     document.getElementById('online-step-1').style.display = 'none';
                     document.getElementById('online-step-join').style.display = 'none';
@@ -1969,7 +1979,7 @@
                         rumSpelareKronologisk.push(data.name);
                     }
                     if (!rumsStatistik[data.name]) {
-                        rumsStatistik[data.name] = laddaLokalStatistikForSpelare(data.name);
+                        rumsStatistik[data.name] = { matches: 0, wins: 0, losses: 0 };
                     }
 
                     conn.send({ type: 'JOIN_ACCEPTED' });
@@ -2006,7 +2016,7 @@
                         rumSpelareKronologisk.push(p.name);
                     }
                     if (!rumsStatistik[p.name]) {
-                        rumsStatistik[p.name] = laddaLokalStatistikForSpelare(p.name);
+                        rumsStatistik[p.name] = { matches: 0, wins: 0, losses: 0 };
                     }
                 });
 
@@ -2131,7 +2141,9 @@
             rumSpelareKronologisk = connectedPlayersList.map(p => p.name);
             rumsStatistik = {};
             rumSpelareKronologisk.forEach(n => {
-                rumsStatistik[n] = laddaLokalStatistikForSpelare(n);
+                if (!rumsStatistik[n]) {
+                    rumsStatistik[n] = { matches: 0, wins: 0, losses: 0 };
+                }
             });
 
             gameState.players.forEach(p => {
