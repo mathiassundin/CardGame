@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame v.9</title>
+    <title>CardGame v.10</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -84,6 +84,8 @@
             width: 100%;
             text-align: center;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-card h2 {
@@ -414,7 +416,21 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame v.9</h2>
+            <h2>CardGame v.10</h2>
+
+            <!-- Inbyggda regler direkt i startmenyn -->
+            <details style="text-align: left; margin-bottom: 0.75rem;">
+                <summary>Regler & Hur man spelar 📖</summary>
+                <div style="padding-top:0.5rem; line-height:1.4; font-size: 0.8rem; color: #94a3b8;">
+                    <p><strong>Mål:</strong> Bli den första spelaren att tömma din egen gömda <strong>Stock-hög</strong>!</p>
+                    <ul style="margin-left:1.1rem; margin-top:0.2rem;">
+                        <li>Bygg på de 4 gemensamma mitthögarna från <strong>1 till 12</strong> i nummerordning.</li>
+                        <li>När en mitthög når 12 kasseras den automatiskt.</li>
+                        <li><strong>Jokrar (J)</strong> kan ersätta vilket nummer som helst.</li>
+                        <li>Turen avslutas genom att klicka på ett kort i din hand och sedan välja en av dina 4 egna slänghögar.</li>
+                    </ul>
+                </div>
+            </details>
 
             <div id="setup-view-mode">
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
@@ -476,7 +492,7 @@
                     <input type="text" id="online-room-id" placeholder="Ange Rumskod">
                     <div style="display: flex; gap: 0.5rem;">
                         <button class="btn" style="background: #334155; flex: 1;" onclick="tillbakaTillOnlineSteg1()">Tillbaka</button>
-                        <button class="btn" style="flex: 2; background:#16a34a;" onclick="anslutTillRum()">Anslut 🔗</button>
+                        <button id="btn-submit-join" class="btn" style="flex: 2; background:#16a34a;" onclick="anslutTillRum()">Anslut till rum 🚪</button>
                     </div>
                 </div>
 
@@ -517,12 +533,10 @@
                     <div id="lobby-player-count-title" style="text-align:left; font-size:0.85rem; margin-bottom:0.25rem; font-weight:bold;">Anslutna spelare (1/8):</div>
                     <ul id="connected-players-list" class="lobby-list"></ul>
 
-                    <!-- "Jag är REDO"-knapp för klienter -->
                     <div id="ready-button-container" style="margin-bottom: 0.75rem; display: none;">
                         <button id="toggle-ready-btn" class="btn" style="width: 100%; background: #16a34a; font-size: 1rem;" onclick="markeraMigSomRedo()">Jag är REDO 👍</button>
                     </div>
 
-                    <!-- Chatt synlig i lobbyn -->
                     <section class="chat-section" id="lobby-chat-section" style="margin-top:0.5rem; margin-bottom:0.75rem;">
                         <h3 style="font-size: 0.85rem; color: #38bdf8;">Rumschatt (Endast ren text)</h3>
                         <div id="chat-messages" class="chat-messages"></div>
@@ -538,7 +552,7 @@
                     </div>
                 </div>
 
-                <!-- Rött felmeddelande i anslutningsvyn istället för popup -->
+                <!-- Endast röd text för felmeddelanden -->
                 <div id="online-status" style="font-size:0.85rem; color:#f87171; font-weight:bold; margin-top:0.5rem; text-align:center;"></div>
             </div>
         </div>
@@ -559,23 +573,10 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame v.9</h1>
+        <h1>CardGame v.10</h1>
     </header>
 
     <main class="game-container">
-        <details>
-            <summary>Regler & Hur man spelar 📖</summary>
-            <div style="padding-top:0.5rem; line-height:1.5;">
-                <p><strong>Mål:</strong> Bli den första spelaren att tömma din egen gömda <strong>Stock-hög</strong>!</p>
-                <ul style="margin-left:1.2rem; margin-top:0.25rem;">
-                    <li>Bygg på de 4 gemensamma mitthögarna från <strong>1 till 12</strong> i nummerordning.</li>
-                    <li>När en mitthög når 12 kasseras den automatiskt.</li>
-                    <li><strong>Jokrar (J)</strong> kan ersätta vilket nummer som helst.</li>
-                    <li>Turen avslutas genom att klicka på ett kort i din hand och sedan välja en av dina 4 egna slänghögar.</li>
-                </ul>
-            </div>
-        </details>
-
         <!-- Samlad Enhetlig Turn- & Statusbanner -->
         <div id="turn-banner-box" class="turn-banner-box" role="status">Välkommen! Välj spelläge i menyn.</div>
 
@@ -625,7 +626,6 @@
             </div>
         </section>
 
-        <!-- Chatt under aktivt spel -->
         <section class="chat-section" id="game-chat-section" style="display: none;">
             <h3 style="font-size: 0.9rem; color: #38bdf8;">Rumschatt (Endast ren text)</h3>
             <div id="game-chat-messages" class="chat-messages"></div>
@@ -701,7 +701,7 @@
                 document.getElementById('btn-create-room').style.display = 'none';
                 let btnGamed = document.getElementById('btn-join-room');
                 if (btnGamed) {
-                    btnGamed.textContent = "Anslut till länk 🔗";
+                    btnGamed.textContent = "Anslut till rum 🚪";
                     btnGamed.onclick = () => anslutMedLänkDirekt(roomParam);
                 }
             } else {
@@ -1449,7 +1449,10 @@
             let nick = document.getElementById('online-nickname').value.trim();
             let status = document.getElementById('online-status');
 
-            if (!roomId) return alert("Ange en giltig rumskod!");
+            if (!roomId) {
+                status.textContent = "Ange en giltig rumskod!";
+                return;
+            }
             if (!nick) {
                 status.textContent = "Ange ditt spelarnamn först!";
                 return;
@@ -1480,8 +1483,9 @@
 
                     conn.on('close', () => {
                         if (!hasLeftGame) {
-                            alert("Värden (host) har lämnat rummet. Du skickas till huvudmenyn.");
-                            visaHuvudmeny();
+                            // Ersatt alert med textmeddelande i statusfältet eller lobbyn om host lämnar
+                            status.textContent = "Värden (host) har lämnat rummet.";
+                            setTimeout(() => visaHuvudmeny(), 1500);
                         }
                     });
                 });
@@ -1568,7 +1572,6 @@
             let status = document.getElementById('online-status');
 
             if (data.type === 'NAME_TAKEN') {
-                // Skriv ut felmeddelandet i rött direkt i anslutningsvyn utan popup
                 if (status) status.textContent = `Namnet "${data.name}" är upptaget. Ändra namn och försök igen.`;
                 document.getElementById('online-step-1').style.display = 'block';
                 document.getElementById('online-step-join').style.display = 'none';
@@ -1587,11 +1590,11 @@
                 toggleBtn.textContent = 'Jag är REDO 👍';
                 toggleBtn.style.background = '#16a34a';
             } else if (data.type === 'HOST_LEFT') {
-                alert("Värden (host) har stängt rummet. Du skickas till huvudmenyn.");
-                visaHuvudmeny();
+                if (status) status.textContent = "Värden (host) har stängt rummet.";
+                setTimeout(() => visaHuvudmeny(), 1500);
             } else if (data.type === 'ROOM_FULL') {
-                alert("Rummet är fullt (max 8 spelare)!");
-                visaHuvudmeny();
+                if (status) status.textContent = "Rummet är fullt (max 8 spelare)!";
+                setTimeout(() => visaHuvudmeny(), 1500);
             } else if (data.type === 'JOIN_LOBBY' && isHost) {
                 let lowerName = data.name.trim().toLowerCase();
                 let nameExists = connectedPlayersList.some(p => p.name.trim().toLowerCase() === lowerName);
@@ -1785,7 +1788,8 @@
 
             let safeText = valideraOchRensaText(rawText);
             if (safeText === null) {
-                alert("Ogiltigt meddelande! Endast ren text är tillåten (inga emojis, HTML eller script-taggar).");
+                let status = document.getElementById('online-status');
+                if (status) status.textContent = "Ogiltigt meddelande! Endast ren text är tillåten.";
                 return;
             }
 
