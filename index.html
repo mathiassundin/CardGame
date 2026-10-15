@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame v.7</title>
+    <title>CardGame v.8</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -414,7 +414,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame v.7</h2>
+            <h2>CardGame v.8</h2>
 
             <div id="setup-view-mode">
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
@@ -463,10 +463,11 @@
                     <div id="direct-invite-notice" style="display:none; color:#f59e0b; font-size:0.85rem; margin-bottom:0.5rem; font-weight:bold;">📩 Du har anslutit via inbjudningslänk! Ange ditt eget namn nedan:</div>
                     <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Ditt spelarnamn:</label>
                     <input type="text" id="online-nickname" placeholder="Ange ditt namn" value="">
-                    <div style="display:flex; gap:0.5rem; margin-top: 0.5rem;">
-                        <button class="btn" style="background: #334155; flex: 1;" onclick="visaHuvudmeny()">Tillbaka</button>
-                        <button class="btn" style="flex: 2;" onclick="valjOnlineHandling('skapa')">Skapa rum</button>
-                        <button class="btn" style="flex: 2; background: #16a34a;" onclick="valjOnlineHandling('gamed')">Gå med</button>
+                    
+                    <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top: 0.5rem;">
+                        <button id="btn-create-room" class="btn" style="background: #2563eb;" onclick="valjOnlineHandling('skapa')">Skapa rum</button>
+                        <button id="btn-join-room" class="btn" style="background: #16a34a;" onclick="valjOnlineHandling('gamed')">Gå med i rum</button>
+                        <button class="btn" style="background: #334155;" onclick="visaHuvudmeny()">Tillbaka till huvudmeny 🏠</button>
                     </div>
                 </div>
 
@@ -557,7 +558,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame v.7</h1>
+        <h1>CardGame v.8</h1>
     </header>
 
     <main class="game-container">
@@ -697,7 +698,10 @@
                 document.getElementById('online-step-join').style.display = 'none';
                 document.getElementById('online-room-id').value = roomParam;
                 document.getElementById('direct-invite-notice').style.display = 'block';
-                let btnGamed = document.querySelector('#online-step-1 button:nth-of-type(3)');
+                
+                // Dölj knappen "Skapa rum" helt om man ansluter via länk
+                document.getElementById('btn-create-room').style.display = 'none';
+                let btnGamed = document.getElementById('btn-join-room');
                 if (btnGamed) {
                     btnGamed.textContent = "Anslut till länk 🔗";
                     btnGamed.onclick = () => anslutMedLänkDirekt(roomParam);
@@ -736,9 +740,11 @@
             document.getElementById('direct-invite-notice').style.display = 'none';
             document.getElementById('online-status').textContent = '';
             
-            let btnGamed = document.querySelector('#online-step-1 button:nth-of-type(3)');
+            // Återställ knappar för normalt läge
+            document.getElementById('btn-create-room').style.display = 'block';
+            let btnGamed = document.getElementById('btn-join-room');
             if (btnGamed) {
-                btnGamed.textContent = "Gå med";
+                btnGamed.textContent = "Gå med i rum";
                 btnGamed.onclick = () => valjOnlineHandling('gamed');
             }
 
@@ -1285,8 +1291,8 @@
             if (spellage === 'online') {
                 let msgPayload = { type: 'PLAYER_LEFT_GAME', playerName: myName, playerId: myPlayerId };
                 if (isHost) {
-                    hanteraSpelareLamnade(myName, myPlayerId);
-                    connections.forEach(c => c.send(msgPayload));
+                    connections.forEach(c => c.send({ type: 'HOST_LEFT' }));
+                    visaHuvudmeny();
                 } else if (hostConnection) {
                     hostConnection.send(msgPayload);
                     visaHuvudmeny();
@@ -1320,7 +1326,6 @@
                 return;
             }
 
-            // Om det var den lämnande spelarens tur, hoppa direkt vidare till nästa spelare!
             if (varDetDenSpelarensTur && !gameState.gameOver) {
                 nastaTur();
             }
@@ -1335,7 +1340,6 @@
             stoppaBlitzTimer();
             hasLeftGame = false;
 
-            // Återställ Redo-status för icke-host klienter
             if (!isHost) {
                 isMyReadyStatus = false;
                 let toggleBtn = document.getElementById('toggle-ready-btn');
@@ -1360,7 +1364,6 @@
 
         function atergaTillLobbyFranVinst() {
             if (spellage === 'online' && isHost) {
-                // Återställ redo-status för alla anslutna klienter i listan
                 connectedPlayersList.forEach(p => {
                     if (!p.isHost) p.isReady = false;
                 });
@@ -1379,6 +1382,7 @@
             status.textContent = "Skapar online-rum...";
 
             try {
+                if (peer && !peer.destroyed) peer.destroy();
                 peer = new Peer();
                 peer.on('open', (id) => {
                     isHost = true;
@@ -1452,9 +1456,7 @@
             status.textContent = "Söker efter rum...";
 
             try {
-                if (peer && !peer.destroyed) {
-                    peer.destroy();
-                }
+                if (peer && !peer.destroyed) peer.destroy();
                 peer = new Peer();
                 peer.on('open', (myId) => {
                     let conn = peer.connect(roomId);
@@ -1475,8 +1477,9 @@
                     });
 
                     conn.on('close', () => {
-                        // Stäng bara anslutning om användaren aktivt lämnat
-                        if (hasLeftGame) {
+                        // Om host lämnar spelet stängs anslutningen för klienten
+                        if (!hasLeftGame) {
+                            alert("Värden (host) har lämnat rummet. Du skickas till huvudmenyn.");
                             visaHuvudmeny();
                         }
                     });
@@ -1566,7 +1569,6 @@
             if (data.type === 'NAME_TAKEN') {
                 alert(`Namnet "${data.name}" är redan upptaget i detta rum! Vänligen ange ett annat spelarnamn.`);
                 if (status) status.textContent = `Namnet "${data.name}" är upptaget. Ändra namn och försök igen.`;
-                // Behåll spelaren på namnsidan så de slipper klicka på länken igen!
                 visaOnlineSetup();
             } else if (data.type === 'JOIN_ACCEPTED') {
                 document.getElementById('online-step-1').style.display = 'none';
@@ -1583,6 +1585,9 @@
                 toggleBtn.style.background = '#16a34a';
 
                 if (status) status.textContent = "Ansluten! Klicka på 'Jag är REDO' för att göra dig klar.";
+            } else if (data.type === 'HOST_LEFT') {
+                alert("Värden (host) har stängt rummet. Du skickas till huvudmenyn.");
+                visaHuvudmeny();
             } else if (data.type === 'ROOM_FULL') {
                 alert("Rummet är fullt (max 8 spelare)!");
                 visaHuvudmeny();
@@ -1762,7 +1767,7 @@
         function valideraOchRensaText(text) {
             if (/[<>]/g.test(text)) return null;
             
-            const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
+            const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
             if (emojiRegex.test(text)) return null;
 
             let div = document.createElement('div');
