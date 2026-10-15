@@ -400,18 +400,11 @@
         }
         .chat-message {
             word-break: break-word;
+            color: #ffffff;
         }
-        .chat-message .sender {
-            font-weight: bold;
-            color: #38bdf8;
-        }
-        .chat-input-row {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .chat-input-row input {
-            margin: 0;
-            flex: 1;
+        .chat-system-message {
+            font-style: italic;
+            color: #94a3b8;
         }
     </style>
 </head>
@@ -426,17 +419,18 @@
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
                 <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <button class="btn" style="background: #2563eb; font-size: 1rem; padding: 0.8rem;" onclick="visaSingleSetup()">🤖 Single Player (mot botar)</button>
-                    <button class="btn" style="background: #0d9488; font-size: 1rem; padding: 0.8rem;" onclick="visaOnlineSetup()">🌐 Online Multiplayer</button>
+                    <button class="btn" style="background: #0d9488; font-size: 1rem; padding: 0.8rem;" onclick="visaOnlineSetup()">🌐 Online Multiplayer (2-8 spelare)</button>
                 </div>
             </div>
 
             <div id="setup-view-single" style="display: none;">
                 <h3 style="color: #38bdf8; margin-bottom: 0.75rem; font-size: 1.1rem;">Single Player</h3>
-                <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Antal spelare (mot botar):</label>
+                <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Antal spelare & stockstorlek:</label>
                 <select id="single-player-count">
                     <option value="2">2 Spelare (20 kort i stocken)</option>
                     <option value="3">3 Spelare (16 kort i stocken)</option>
                     <option value="4">4 Spelare (12 kort i stocken)</option>
+                    <option value="debug">🛠️ Debug-läge (2 kort i stocken)</option>
                 </select>
                 <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                     <button class="btn" style="background: #334155; flex: 1;" onclick="visaHuvudmeny()">Tillbaka</button>
@@ -445,7 +439,7 @@
             </div>
 
             <div id="setup-view-online" style="display: none;">
-                <h3 style="color: #38bdf8; margin-bottom: 0.75rem; font-size: 1.1rem;">Online Multiplayer (Max 4 spelare)</h3>
+                <h3 style="color: #38bdf8; margin-bottom: 0.75rem; font-size: 1.1rem;">Online Multiplayer (2-8 spelare)</h3>
                 
                 <div id="online-step-1">
                     <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Ditt spelarnamn:</label>
@@ -478,11 +472,22 @@
                             <option value="20">20 kort i stocken</option>
                             <option value="16">16 kort i stocken</option>
                             <option value="12">12 kort i stocken</option>
+                            <option value="debug">🛠️ Debug-läge (2 kort i stocken)</option>
                         </select>
                     </div>
 
-                    <div style="text-align:left; font-size:0.85rem; margin-bottom:0.25rem; font-weight:bold;">Anslutna spelare (max 4):</div>
+                    <div style="text-align:left; font-size:0.85rem; margin-bottom:0.25rem; font-weight:bold;">Anslutna spelare (max 8):</div>
                     <ul id="connected-players-list" class="lobby-list"></ul>
+
+                    <!-- Chatt synlig redan i lobbyn -->
+                    <section class="chat-section" id="lobby-chat-section" style="margin-top:0.5rem; margin-bottom:0.75rem;">
+                        <h3 style="font-size: 0.85rem; color: #38bdf8;">Rumschatt (Endast ren text)</h3>
+                        <div id="chat-messages" class="chat-messages"></div>
+                        <div class="chat-input-row" style="margin-top:0.3rem;">
+                            <input type="text" id="chat-input" placeholder="Skriv meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') skickaChatMeddelande();">
+                            <button class="btn" style="padding: 0.3rem 0.6rem; font-size:0.8rem;" onclick="skickaChatMeddelande()">Skicka</button>
+                        </div>
+                    </section>
 
                     <div style="display: flex; gap: 0.5rem;">
                         <button class="btn" style="background: #334155; flex: 1;" onclick="visaHuvudmeny()">Avbryt</button>
@@ -506,7 +511,7 @@
         </div>
     </div>
 
-    <!-- Toast Overlay (Visas tillfälligt i mitten) -->
+    <!-- Toast Overlay -->
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
@@ -573,12 +578,12 @@
             </div>
         </section>
 
-        <!-- Rumschatt (Endast ren text, inga emojis eller script-taggar) -->
+        <!-- Chatt under aktivt spel -->
         <section class="chat-section" id="game-chat-section" style="display: none;">
             <h3 style="font-size: 0.9rem; color: #38bdf8;">Rumschatt (Endast ren text)</h3>
-            <div id="chat-messages" class="chat-messages"></div>
-            <div class="chat-input-row">
-                <input type="text" id="chat-input" placeholder="Skriv ett meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') skickaChatMeddelande();">
+            <div id="game-chat-messages" class="chat-messages"></div>
+            <div class="chat-input-row" style="margin-top:0.3rem;">
+                <input type="text" id="game-chat-input" placeholder="Skriv ett meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') skickaChatMeddelande();">
                 <button class="btn" style="padding: 0.4rem 0.8rem;" onclick="skickaChatMeddelande()">Skicka</button>
             </div>
         </section>
@@ -586,6 +591,8 @@
 
     <script>
         const BOT_NAMES = ["Gregor", "Astrid", "Karin", "Lars", "Sven", "Elin", "Maja", "Olof"];
+        const PLAYER_COLORS = ["#38bdf8", "#4ade80", "#f59e0b", "#f43f5e", "#a855f7", "#06b6d4", "#ec4899", "#84cc16"];
+        
         let spellage = 'single';
         let peer = null;
         let isHost = false;
@@ -631,6 +638,7 @@
             }
             connections = [];
             hostConnection = null;
+            connectedPlayersList = [];
         }
 
         function visaSingleSetup() {
@@ -676,12 +684,14 @@
             return kopia.slice(0, antal).map(n => `${n}(bot)`);
         }
 
-        function skapaKortlek() {
+        function skapaKortlek(multiplikator = 1) {
             let lek = [];
-            for (let v = 1; v <= 12; v++) {
-                for (let i = 0; i < 12; i++) lek.push({ type: 'number', value: v });
+            for (let m = 0; m < multiplikator; m++) {
+                for (let v = 1; v <= 12; v++) {
+                    for (let i = 0; i < 12; i++) lek.push({ type: 'number', value: v });
+                }
+                for (let i = 0; i < 18; i++) lek.push({ type: 'joker', value: 'JOKER' });
             }
-            for (let i = 0; i < 18; i++) lek.push({ type: 'joker', value: 'JOKER' });
             return blandaleKortlek(lek);
         }
 
@@ -724,11 +734,15 @@
         function startaSpel() {
             document.getElementById('setup-modal').style.display = 'none';
             document.getElementById('game-chat-section').style.display = 'none';
-            let antal = parseInt(document.getElementById('single-player-count').value);
+            
+            let val = document.getElementById('single-player-count').value;
+            let antal = val === 'debug' ? 2 : parseInt(val);
+            let stockStorlek = val === 'debug' ? 2 : (antal === 2 ? 20 : (antal === 3 ? 16 : 12));
+
             gameState.numPlayers = antal;
             gameState.gameOver = false;
             gameState.winnerName = null;
-            gameState.deck = skapaKortlek();
+            gameState.deck = skapaKortlek(1);
             gameState.recycleDeck = [];
             gameState.centerPiles = [[], [], [], []];
             gameState.currentRound = 1;
@@ -737,7 +751,6 @@
             myPlayerId = 0;
             senasteDragInfo = null;
 
-            let stockStorlek = antal === 2 ? 20 : (antal === 3 ? 16 : 12);
             let botNamn = slumpaNamn(antal - 1);
 
             gameState.players = [{ name: "Du", isBot: false, stock: [], hand: [], discards: [[], [], [], []] }];
@@ -1064,9 +1077,9 @@
             document.getElementById('winner-modal').style.display = 'flex';
         }
 
-        /* ONLINE PEERJS LOBBY & MULTIPLAYER (UPP TILL 4 SPELARE) */
+        /* ONLINE PEERJS LOBBY & MULTIPLAYER (UPP TILL 8 SPELARE) */
         function skapaOnlineRum() {
-            let nick = document.getElementById('online-nickname').value || 'Spelare 1';
+            let nick = document.getElementById('online-nickname').value.trim() || 'Spelare 1';
             let status = document.getElementById('online-status');
             status.textContent = "Skapar online-rum...";
 
@@ -1075,7 +1088,7 @@
                 peer.on('open', (id) => {
                     isHost = true;
                     myPlayerId = 0;
-                    connectedPlayersList = [{ id: 0, name: nick, isHost: true, peerId: id }];
+                    connectedPlayersList = [{ id: 0, name: nick, isHost: true, peerId: id, color: PLAYER_COLORS[0] }];
                     
                     document.getElementById('online-step-1').style.display = 'none';
                     document.getElementById('online-step-join').style.display = 'none';
@@ -1084,11 +1097,12 @@
                     document.getElementById('host-controls').style.display = 'block';
                     
                     uppdateraLobbyUI();
-                    status.textContent = "Rum skapat! Väntar på att spelare ansluter (max 4).";
+                    laggTillChatMeddelande("System", `${nick} har skapat rummet.`, true);
+                    status.textContent = "Rum skapat! Väntar på att spelare ansluter (max 8).";
                 });
 
                 peer.on('connection', (conn) => {
-                    if (connectedPlayersList.length >= 4) {
+                    if (connectedPlayersList.length >= 8) {
                         conn.on('open', () => {
                             conn.send({ type: 'ROOM_FULL' });
                             setTimeout(() => conn.close(), 500);
@@ -1099,9 +1113,13 @@
                     connections.push(conn);
                     conn.on('data', (data) => hanteraInkommandeData(data, conn));
                     conn.on('close', () => {
+                        let leftPlayer = connectedPlayersList.find(p => p.peerId === conn.peer);
                         connections = connections.filter(c => c !== conn);
                         connectedPlayersList = connectedPlayersList.filter(p => p.peerId !== conn.peer);
-                        broadcastLobby();
+                        if (leftPlayer) {
+                            broadcastLobby();
+                            broadcastSystemMessage(`${leftPlayer.name} har lämnat lobbyn.`);
+                        }
                     });
                 });
 
@@ -1115,7 +1133,7 @@
 
         function anslutTillRum() {
             let roomId = document.getElementById('online-room-id').value.trim();
-            let nick = document.getElementById('online-nickname').value || 'Spelare 2';
+            let nick = document.getElementById('online-nickname').value.trim() || 'Spelare 2';
             let status = document.getElementById('online-status');
 
             if (!roomId) return alert("Ange en giltig rumskod!");
@@ -1164,33 +1182,40 @@
             list.innerHTML = '';
             connectedPlayersList.forEach((p) => {
                 let li = document.createElement('li');
-                li.innerHTML = `<span>${p.name} ${p.isHost ? '👑 (Värd)' : ''}</span><span style="color:#16a34a;">Redo</span>`;
+                li.innerHTML = `<span style="color: ${p.color}; font-weight: bold;">${p.name} ${p.isHost ? '👑 (Värd)' : ''}</span><span style="color:#16a34a;">Redo</span>`;
                 list.appendChild(li);
             });
 
             let startBtn = document.getElementById('start-online-game-btn');
             if (isHost) {
                 startBtn.disabled = connectedPlayersList.length < 2;
-                startBtn.textContent = connectedPlayersList.length < 2 ? `Väntar på spelare (${connectedPlayersList.length}/4)...` : `Starta Spel (${connectedPlayersList.length} spelare) 🚀`;
+                startBtn.textContent = connectedPlayersList.length < 2 ? `Väntar på spelare (${connectedPlayersList.length}/8)...` : `Starta Spel (${connectedPlayersList.length} spelare) 🚀`;
             }
+        }
+
+        function broadcastSystemMessage(text) {
+            laggTillChatMeddelande("System", text, true);
+            connections.forEach(c => c.send({ type: 'SYSTEM_MESSAGE', text: text }));
         }
 
         function hanteraInkommandeData(data, conn) {
             if (data.type === 'ROOM_FULL') {
-                alert("Rummet är fullt (max 4 spelare)!");
+                alert("Rummet är fullt (max 8 spelare)!");
                 visaHuvudmeny();
             } else if (data.type === 'JOIN_LOBBY' && isHost) {
-                if (connectedPlayersList.length < 4) {
+                if (connectedPlayersList.length < 8) {
                     let exists = connectedPlayersList.some(p => p.peerId === data.peerId);
                     if (!exists) {
                         let newId = connectedPlayersList.length;
-                        connectedPlayersList.push({ id: newId, name: data.name, isHost: false, peerId: data.peerId });
+                        let assignedColor = PLAYER_COLORS[newId % PLAYER_COLORS.length];
+                        connectedPlayersList.push({ id: newId, name: data.name, isHost: false, peerId: data.peerId, color: assignedColor });
                         broadcastLobby();
+                        broadcastSystemMessage(`${data.name} har gått med i spelet.`);
                     }
                 }
             } else if (data.type === 'LOBBY_UPDATE') {
                 connectedPlayersList = data.players;
-                let currentNick = document.getElementById('online-nickname').value || 'Spelare';
+                let currentNick = document.getElementById('online-nickname').value.trim() || 'Spelare';
                 let myObj = connectedPlayersList.find(p => p.name === currentNick && p.peerId === peer.id);
                 if (myObj) {
                     myPlayerId = myObj.id;
@@ -1199,6 +1224,8 @@
                     if (fallback) myPlayerId = fallback.id;
                 }
                 uppdateraLobbyUI();
+            } else if (data.type === 'SYSTEM_MESSAGE') {
+                laggTillChatMeddelande("System", data.text, true);
             } else if (data.type === 'GAME_START') {
                 document.getElementById('setup-modal').style.display = 'none';
                 document.getElementById('game-chat-section').style.display = 'flex';
@@ -1224,7 +1251,7 @@
                     uppdateraUI();
                 }
             } else if (data.type === 'CHAT_MESSAGE') {
-                laggTillChatMeddelande(data.sender, data.text);
+                laggTillChatMeddelande(data.sender, data.text, false, data.color);
                 if (isHost) {
                     connections.forEach(c => {
                         if (c !== conn) c.send(data);
@@ -1245,11 +1272,17 @@
         function startaOnlineSpelHost() {
             if (!isHost || connectedPlayersList.length < 2) return;
 
-            let stockSize = parseInt(document.getElementById('online-stock-size').value);
-            gameState.numPlayers = connectedPlayersList.length;
+            let val = document.getElementById('online-stock-size').value;
+            let stockSize = val === 'debug' ? 2 : parseInt(val);
+            let antalSpelare = connectedPlayersList.length;
+            
+            // Om 5-8 spelare dubblas den gemensamma kortleken (multiplikator 2)
+            let kortleksMultiplikator = antalSpelare >= 5 ? 2 : 1;
+
+            gameState.numPlayers = antalSpelare;
             gameState.gameOver = false;
             gameState.winnerName = null;
-            gameState.deck = skapaKortlek();
+            gameState.deck = skapaKortlek(kortleksMultiplikator);
             gameState.recycleDeck = [];
             gameState.centerPiles = [[], [], [], []];
             gameState.currentRound = 1;
@@ -1262,7 +1295,8 @@
                 isBot: false,
                 stock: [],
                 hand: [],
-                discards: [[], [], [], []]
+                discards: [[], [], [], []],
+                color: p.color
             }));
 
             gameState.players.forEach(p => {
@@ -1295,7 +1329,7 @@
         }
 
         function skickaChatMeddelande() {
-            let input = document.getElementById('chat-input');
+            let input = document.getElementById(spellage === 'online' && document.getElementById('online-lobby-view').style.display === 'block' ? 'chat-input' : 'game-chat-input');
             let rawText = input.value.trim();
             if (!rawText) return;
 
@@ -1305,12 +1339,23 @@
                 return;
             }
 
-            let myUser = gameState.players[myPlayerId];
-            let senderName = myUser ? myUser.name : 'Spelare';
+            let senderName = 'Spelare';
+            let senderColor = '#38bdf8';
 
-            laggTillChatMeddelande(senderName, safeText);
+            if (spellage === 'online') {
+                let myObj = connectedPlayersList.find(p => p.id === myPlayerId);
+                if (myObj) {
+                    senderName = myObj.name;
+                    senderColor = myObj.color;
+                }
+            } else {
+                senderName = gameState.players[myPlayerId] ? gameState.players[myPlayerId].name : 'Du';
+                senderColor = PLAYER_COLORS[0];
+            }
 
-            let msgPayload = { type: 'CHAT_MESSAGE', sender: senderName, text: safeText };
+            laggTillChatMeddelande(senderName, safeText, false, senderColor);
+
+            let msgPayload = { type: 'CHAT_MESSAGE', sender: senderName, text: safeText, color: senderColor };
 
             if (spellage === 'online') {
                 if (isHost) {
@@ -1323,13 +1368,20 @@
             input.value = '';
         }
 
-        function laggTillChatMeddelande(sender, text) {
-            let chatBox = document.getElementById('chat-messages');
-            let div = document.createElement('div');
-            div.className = 'chat-message';
-            div.innerHTML = `<span class="sender">${sender}:</span> ${text}`;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
+        function laggTillChatMeddelande(sender, text, isSystem = false, color = '#38bdf8') {
+            let chatBoxes = [document.getElementById('chat-messages'), document.getElementById('game-chat-messages')];
+            chatBoxes.forEach(chatBox => {
+                if (!chatBox || chatBox.offsetParent === null) return;
+                let div = document.createElement('div');
+                div.className = 'chat-message';
+                if (isSystem) {
+                    div.innerHTML = `<span class="chat-system-message">${text}</span>`;
+                } else {
+                    div.innerHTML = `<span style="font-weight: bold; color: ${color};">${sender}:</span> <span style="color: #ffffff;">${text}</span>`;
+                }
+                chatBox.appendChild(div);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
         }
 
         function uppdateraUI() {
@@ -1403,7 +1455,7 @@
 
                 div.innerHTML = `
                     <div style="font-weight:bold; font-size:0.9rem; margin-bottom:0.4rem; display: flex; justify-content: space-between; align-items: center;">
-                        <span>${opp.name}</span>
+                        <span style="color: ${opp.color || '#f8fafc'};">${opp.name}</span>
                         ${isCurrent ? '<span style="background: #f59e0b; color: #000; font-size:0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">SPELAR NU ⭐</span>' : ''}
                     </div>
                     <div style="display:flex; gap:0.5rem; justify-content:space-between; align-items:flex-start;">
@@ -1421,7 +1473,7 @@
                 oppContainer.appendChild(div);
             }
 
-            // Mitthögar (med riktad målanimation)
+            // Mitthögar
             let centerContainer = document.getElementById('center-piles-container');
             centerContainer.innerHTML = '';
             gameState.centerPiles.forEach((hog, index) => {
