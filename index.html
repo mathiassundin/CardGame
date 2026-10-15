@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame v.12</title>
+    <title>CardGame v.13</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -388,6 +388,7 @@
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
+            text-align: left;
         }
         .chat-messages {
             background: #0f172a;
@@ -400,10 +401,12 @@
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
+            text-align: left;
         }
         .chat-message {
             word-break: break-word;
             color: #ffffff;
+            text-align: left;
         }
         .chat-system-message {
             font-style: italic;
@@ -448,7 +451,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame v.12</h2>
+            <h2>CardGame v.13</h2>
 
             <!-- Inbyggda regler i startmenyn -->
             <details style="text-align: left; margin-bottom: 0.75rem;">
@@ -578,7 +581,7 @@
                     </div>
 
                     <section class="chat-section" id="lobby-chat-section" style="margin-top:0.5rem; margin-bottom:0.75rem;">
-                        <h3 style="font-size: 0.85rem; color: #38bdf8; text-align: right;">Lobbychat</h3>
+                        <h3 style="font-size: 0.85rem; color: #38bdf8; text-align: left;">Lobbychat</h3>
                         <div id="chat-messages" class="chat-messages"></div>
                         <div class="chat-input-row" style="margin-top:0.3rem;">
                             <input type="text" id="chat-input" placeholder="Skriv meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') skickaChatMeddelande();">
@@ -612,7 +615,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame v.12</h1>
+        <h1>CardGame v.13</h1>
     </header>
 
     <main class="game-container">
@@ -666,7 +669,7 @@
         </section>
 
         <section class="chat-section" id="game-chat-section" style="display: none;">
-            <h3 style="font-size: 0.9rem; color: #38bdf8; text-align: right;">Lobbychat</h3>
+            <h3 style="font-size: 0.9rem; color: #38bdf8; text-align: left;">Lobbychat</h3>
             <div id="game-chat-messages" class="chat-messages"></div>
             <div class="chat-input-row" style="margin-top:0.3rem;">
                 <input type="text" id="game-chat-input" placeholder="Skriv ett meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') skickaChatMeddelande();">
@@ -1842,7 +1845,7 @@
         function valideraOchRensaText(text) {
             if (/[<>]/g.test(text)) return null;
             
-            const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
+            const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
             if (emojiRegex.test(text)) return null;
 
             let div = document.createElement('div');
