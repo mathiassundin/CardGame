@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardGame v.3</title>
+    <title>CardGame v.4</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
     <!-- PeerJS bibliotek för P2P Multiplayer utan egen server -->
@@ -371,6 +371,7 @@
             font-size: 0.85rem;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
         .lobby-list li:last-child { border-bottom: none; }
@@ -413,7 +414,7 @@
     <!-- Setup Modal -->
     <div id="setup-modal" class="modal-overlay">
         <div class="modal-card">
-            <h2>CardGame v.3</h2>
+            <h2>CardGame v.4</h2>
 
             <div id="setup-view-mode">
                 <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.9rem;">Välj hur du vill spela:</p>
@@ -469,6 +470,8 @@
                 </div>
 
                 <div id="online-step-join" style="display: none; margin-top: 0.5rem;">
+                    <div id="direct-invite-notice" style="display:none; color:#f59e0b; font-size:0.85rem; margin-bottom:0.5rem; font-weight:bold;">📩 Du har blivit inbjuden via rumslänk!</div>
+                    <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Rumskod:</label>
                     <input type="text" id="online-room-id" placeholder="Ange Rumskod">
                     <div style="display: flex; gap: 0.5rem;">
                         <button class="btn" style="background: #334155; flex: 1;" onclick="tillbakaTillOnlineSteg1()">Tillbaka</button>
@@ -477,10 +480,11 @@
                 </div>
 
                 <div id="online-lobby-view" style="display: none;">
-                    <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.25rem;">Rumskod:</div>
-                    <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem;">
-                        <input type="text" id="display-room-code" readonly style="margin:0; text-align:center; font-weight:bold; color:#f59e0b; font-size:1.1rem;">
-                        <button class="btn" style="padding:0.4rem 0.8rem; background:#334155;" onclick="kopieraRumskod()">Kopiera</button>
+                    <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.25rem;">Dela rummet med kod eller länk:</div>
+                    <div style="display:flex; gap:0.4rem; margin-bottom:0.75rem;">
+                        <input type="text" id="display-room-code" readonly style="margin:0; text-align:center; font-weight:bold; color:#f59e0b; font-size:1rem; flex:1;">
+                        <button class="btn" style="padding:0.4rem 0.6rem; background:#334155; font-size:0.8rem;" onclick="kopieraRumskod()">Kod 📋</button>
+                        <button class="btn" style="padding:0.4rem 0.6rem; background:#0d9488; font-size:0.8rem;" onclick="kopieraRumsLank()">Länk 🔗</button>
                     </div>
 
                     <div id="host-controls">
@@ -512,7 +516,12 @@
                     <div id="lobby-player-count-title" style="text-align:left; font-size:0.85rem; margin-bottom:0.25rem; font-weight:bold;">Anslutna spelare (1/8):</div>
                     <ul id="connected-players-list" class="lobby-list"></ul>
 
-                    <!-- Chatt synlig redan i lobbyn -->
+                    <!-- "Jag är REDO"-knapp för klienter -->
+                    <div id="ready-button-container" style="margin-bottom: 0.75rem; display: none;">
+                        <button id="toggle-ready-btn" class="btn" style="width: 100%; background: #16a34a; font-size: 1rem;" onclick="markeraMigSomRedo()">Jag är REDO 👍</button>
+                    </div>
+
+                    <!-- Chatt synlig i lobbyn -->
                     <section class="chat-section" id="lobby-chat-section" style="margin-top:0.5rem; margin-bottom:0.75rem;">
                         <h3 style="font-size: 0.85rem; color: #38bdf8;">Rumschatt (Endast ren text)</h3>
                         <div id="chat-messages" class="chat-messages"></div>
@@ -548,7 +557,7 @@
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
-        <h1>CardGame v.3</h1>
+        <h1>CardGame v.4</h1>
     </header>
 
     <main class="game-container">
@@ -638,11 +647,12 @@
         let connectedPlayersList = [];
         let senasteDragInfo = null;
         let currentRoomId = '';
-        let hasLeftGame = false; // Flagga för om man lämnat spelet
+        let hasLeftGame = false;
+        let isMyReadyStatus = false;
 
         // Blitz timer variabler
-        let gameMode = 'standard'; // 'standard' eller 'blitz'
-        let blitzTimeLimit = 20; // sekunder
+        let gameMode = 'standard';
+        let blitzTimeLimit = 20;
         let blitzTimerInterval = null;
         let blitzTimeRemaining = 20;
 
@@ -677,20 +687,41 @@
             document.getElementById('in-game-menu-btn').style.display = 'none';
             document.getElementById('leave-game-btn').style.display = 'none';
             document.getElementById('game-chat-section').style.display = 'none';
-            visaHuvudmeny();
+            
+            // Kolla om användaren kom hit via en rumslänk (?room=...)
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            if (roomParam) {
+                visaOnlineSetup();
+                document.getElementById('online-step-1').style.display = 'none';
+                document.getElementById('online-step-join').style.display = 'block';
+                document.getElementById('online-room-id').value = roomParam;
+                document.getElementById('direct-invite-notice').style.display = 'block';
+            } else {
+                visaHuvudmeny();
+            }
         }
 
         function visaHuvudmeny() {
             spellage = 'single';
             stoppaBlitzTimer();
             hasLeftGame = false;
+            isMyReadyStatus = false;
+            
+            // Rensa URL parametrar om man går till huvudmenyn
+            if (window.history.replaceState) {
+                window.history.replaceState(null, null, window.location.pathname);
+            }
+
             document.getElementById('setup-view-mode').style.display = 'block';
             document.getElementById('setup-view-single').style.display = 'none';
             document.getElementById('setup-view-online').style.display = 'none';
             document.getElementById('online-step-1').style.display = 'block';
             document.getElementById('online-step-join').style.display = 'none';
             document.getElementById('online-lobby-view').style.display = 'none';
+            document.getElementById('direct-invite-notice').style.display = 'none';
             document.getElementById('online-status').textContent = '';
+            
             if (peer) {
                 try { peer.destroy(); } catch(e){}
                 peer = null;
@@ -1002,13 +1033,11 @@
             if (gameState.gameOver) return;
             stoppaBlitzTimer();
 
-            // Bläddra till nästa spelare och hoppa över spelare som lämnat (stock.length === 0 och inga kort på hand/avhoppade)
             let loops = 0;
             do {
                 gameState.turnIndex = (gameState.turnIndex + 1) % gameState.numPlayers;
                 loops++;
                 let targetP = gameState.players[gameState.turnIndex];
-                // Om spelaren har lämnat (markerad med tomt eller avhopp) hoppar vi över
                 if (targetP && targetP.isLeft) continue;
                 break;
             } while (loops < gameState.numPlayers);
@@ -1241,7 +1270,8 @@
                     connections.forEach(c => c.send(msgPayload));
                 } else if (hostConnection) {
                     hostConnection.send(msgPayload);
-                    atergaTillLobbyLokal();
+                    // KASTA UT TILL ABSOLUT BÖRJAN AV SPELET
+                    visaHuvudmeny();
                 }
             } else {
                 oppnaSetup();
@@ -1251,7 +1281,7 @@
         function hanteraSpelareLamnade(playerName, playerId) {
             let p = gameState.players[playerId];
             if (p) {
-                p.isLeft = true; // Markera att spelaren har lämnat
+                p.isLeft = true;
                 if (p.stock) gameState.recycleDeck.push(...p.stock);
                 if (p.hand) gameState.recycleDeck.push(...p.hand);
                 p.discards.forEach(hog => {
@@ -1260,20 +1290,16 @@
                 p.stock = [];
             }
 
-            // Skicka systemnotis i chatten till alla kvarvarande
             broadcastSystemMessage(`${playerName} har lämnat spelet. Deras kort har lagts till i kasserade högen.`);
 
-            // Filtrera ut aktiva spelare (som inte lämnat)
             let levandeSpelare = gameState.players.filter(pl => pl && !pl.isLeft);
 
-            // Om exakt 2 spelare fanns från början och en lämnar -> den ensamma kvarvarande vinner automatiskt
             if (gameState.numPlayers === 2 && levandeSpelare.length === 1 && !gameState.gameOver) {
                 let vinnare = levandeSpelare[0];
                 avslutaSpelMedVinnare(vinnare.name, `🏆 Du vann för du är ensam kvar i spelet!`);
                 return;
             }
 
-            // Om det var den aktiva spelarens tur som lämnade, skicka turen vidare omedelbart
             if (gameState.turnIndex === playerId && !gameState.gameOver) {
                 nastaTur();
             }
@@ -1319,17 +1345,19 @@
                     isHost = true;
                     myPlayerId = 0;
                     currentRoomId = id;
-                    connectedPlayersList = [{ id: 0, name: nick, isHost: true, peerId: id, color: PLAYER_COLORS[0] }];
+                    // Värden sätts automatisk som REDO
+                    connectedPlayersList = [{ id: 0, name: nick, isHost: true, isReady: true, peerId: id, color: PLAYER_COLORS[0] }];
                     
                     document.getElementById('online-step-1').style.display = 'none';
                     document.getElementById('online-step-join').style.display = 'none';
                     document.getElementById('online-lobby-view').style.display = 'block';
                     document.getElementById('display-room-code').value = id;
                     document.getElementById('host-controls').style.display = 'block';
+                    document.getElementById('ready-button-container').style.display = 'none'; // Dölj redo-knapp för host
                     
                     uppdateraLobbyUI();
                     laggTillChatMeddelande("System", `${nick} har skapat rummet.`, true);
-                    status.textContent = "Rum skapat! Väntar på att spelare ansluter (max 8).";
+                    status.textContent = "Rum skapat! Väntar på att alla spelare ska trycka REDO.";
                 });
 
                 peer.on('connection', (conn) => {
@@ -1388,6 +1416,7 @@
                 peer.on('open', (myId) => {
                     let conn = peer.connect(roomId);
                     isHost = false;
+                    isMyReadyStatus = false;
                     hostConnection = conn;
                     currentRoomId = roomId;
 
@@ -1401,7 +1430,14 @@
                         document.getElementById('display-room-code').value = roomId;
                         document.getElementById('host-controls').style.display = 'none';
                         document.getElementById('start-online-game-btn').style.display = 'none';
-                        status.textContent = "Ansluten till rummet! Väntar på att värden startar...";
+                        document.getElementById('ready-button-container').style.display = 'block';
+                        
+                        let toggleBtn = document.getElementById('toggle-ready-btn');
+                        toggleBtn.disabled = false;
+                        toggleBtn.textContent = 'Jag är REDO 👍';
+                        toggleBtn.style.background = '#16a34a';
+
+                        status.textContent = "Ansluten! Klicka på 'Jag är REDO' för att göra dig klar.";
                     });
 
                     conn.on('data', (data) => hanteraInkommandeData(data, conn));
@@ -1412,12 +1448,24 @@
 
                     conn.on('close', () => {
                         alert("Värden (admin) har lämnat rummet eller spelet avslutades.");
-                        oppnaSetup();
+                        visaHuvudmeny();
                     });
                 });
             } catch (e) {
                 status.textContent = "Kunde inte ansluta till rummet.";
             }
+        }
+
+        function markeraMigSomRedo() {
+            if (isMyReadyStatus) return; // Kan inte dras tillbaka när man väl tryckt
+            isMyReadyStatus = true;
+            
+            let btn = document.getElementById('toggle-ready-btn');
+            btn.disabled = true;
+            btn.textContent = 'Du är REDO! ⏳ (Väntar på start)';
+            btn.style.background = '#334155';
+
+            sendToHost({ type: 'PLAYER_READY_STATUS', peerId: peer.id, isReady: true });
         }
 
         function kopieraRumskod() {
@@ -1427,12 +1475,32 @@
             visaToast("Rumskod kopierad!");
         }
 
+        function kopieraRumsLank() {
+            let roomCode = document.getElementById('display-room-code').value;
+            let fullUrl = window.location.origin + window.location.pathname + '?room=' + roomCode;
+            navigator.clipboard.writeText(fullUrl);
+            visaToast("Inbjudningslänk kopierad!");
+        }
+
         function uppdateraLobbyUI() {
             let list = document.getElementById('connected-players-list');
             list.innerHTML = '';
+            
+            let allReady = true;
+
             connectedPlayersList.forEach((p) => {
                 let li = document.createElement('li');
-                li.innerHTML = `<span style="color: ${p.color}; font-weight: bold;">${p.name} ${p.isHost ? '👑 (Värd)' : ''}</span><span style="color:#16a34a;">Redo</span>`;
+                let statusText = p.isHost 
+                    ? '<span style="color:#f59e0b; font-weight:bold;">👑 Värd</span>' 
+                    : (p.isReady 
+                        ? '<span style="color:#4ade80; font-weight:bold;">✅ REDO</span>' 
+                        : '<span style="color:#f87171; font-weight:bold;">⏳ Inte redo</span>');
+                
+                if (!p.isHost && !p.isReady) {
+                    allReady = false;
+                }
+
+                li.innerHTML = `<span style="color: ${p.color}; font-weight: bold;">${p.name}</span>${statusText}`;
                 list.appendChild(li);
             });
 
@@ -1443,8 +1511,15 @@
 
             let startBtn = document.getElementById('start-online-game-btn');
             if (isHost) {
-                startBtn.disabled = connectedPlayersList.length < 2;
-                startBtn.textContent = connectedPlayersList.length < 2 ? `Väntar på spelare (${connectedPlayersList.length}/8)...` : `Starta Spel (${connectedPlayersList.length} spelare) 🚀`;
+                let canStart = connectedPlayersList.length >= 2 && allReady;
+                startBtn.disabled = !canStart;
+                if (connectedPlayersList.length < 2) {
+                    startBtn.textContent = `Väntar på fler spelare (${connectedPlayersList.length}/8)...`;
+                } else if (!allReady) {
+                    startBtn.textContent = `Väntar på att alla ska trycka REDO... ⏳`;
+                } else {
+                    startBtn.textContent = `Starta Spel (${connectedPlayersList.length} spelare) 🚀`;
+                }
             }
         }
 
@@ -1465,10 +1540,16 @@
                     if (!exists) {
                         let newId = connectedPlayersList.length;
                         let assignedColor = PLAYER_COLORS[newId % PLAYER_COLORS.length];
-                        connectedPlayersList.push({ id: newId, name: data.name, isHost: false, peerId: data.peerId, color: assignedColor });
+                        connectedPlayersList.push({ id: newId, name: data.name, isHost: false, isReady: false, peerId: data.peerId, color: assignedColor });
                         broadcastLobby();
-                        broadcastSystemMessage(`${data.name} har gått med i spelet.`);
+                        broadcastSystemMessage(`${data.name} har gått med i lobbyn.`);
                     }
+                }
+            } else if (data.type === 'PLAYER_READY_STATUS' && isHost) {
+                let target = connectedPlayersList.find(p => p.peerId === data.peerId);
+                if (target) {
+                    target.isReady = data.isReady;
+                    broadcastLobby();
                 }
             } else if (data.type === 'LOBBY_UPDATE') {
                 connectedPlayersList = data.players;
@@ -1624,7 +1705,7 @@
         }
 
         function skickaChatMeddelande() {
-            if (hasLeftGame) return; // Stoppa avhoppade spelare från att skriva
+            if (hasLeftGame) return;
 
             let input = document.getElementById(spellage === 'online' && document.getElementById('online-lobby-view').style.display === 'block' ? 'chat-input' : 'game-chat-input');
             if (!input) return;
@@ -1724,7 +1805,7 @@
             for (let i = 0; i < gameState.players.length; i++) {
                 if (i === myPlayerId) continue;
                 let opp = gameState.players[i];
-                if (!opp || opp.isLeft) continue; // Hoppa över spelare som lämnat
+                if (!opp || opp.isLeft) continue;
                 
                 let isCurrent = gameState.turnIndex === i && !gameState.gameOver;
                 let div = document.createElement('div');
