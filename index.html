@@ -148,7 +148,6 @@
             100% { transform: scale(1); }
         }
 
-        /* Riktade animationer för käll- och mål-ytor */
         @keyframes sourcePulse {
             0% { transform: scale(1); box-shadow: 0 0 0px #f59e0b; }
             50% { transform: scale(1.08); box-shadow: 0 0 15px #f59e0b; border-color: #f59e0b; }
@@ -199,7 +198,6 @@
             align-items: center;
         }
 
-        /* Card styles */
         .card {
             width: 60px;
             height: 85px;
@@ -223,7 +221,6 @@
             height: 62px;
         }
 
-        /* Baksida för kort */
         .card.card-back {
             background: linear-gradient(135deg, #1e293b 25%, #0f172a 25%, #0f172a 50%, #1e293b 50%, #1e293b 75%, #0f172a 75%, #0f172a 100%);
             background-size: 10px 10px;
@@ -390,7 +387,6 @@
 
         .lobby-list li:last-child { border-bottom: none; }
 
-        /* Statistik-tabell i lobbyn */
         .stats-table {
             width: 100%;
             border-collapse: collapse;
@@ -422,7 +418,6 @@
             border-bottom: none;
         }
 
-        /* Chat Styles */
         .chat-section {
             background: #1e293b;
             border: 1px solid #334155;
@@ -470,7 +465,6 @@
             flex: 1;
         }
 
-        /* Overlay Notice for Copying Buttons */
         .copy-button-container {
             position: relative;
             display: inline-block;
@@ -497,7 +491,6 @@
             top: -35px;
         }
 
-        /* Guest Settings View Box */
         .guest-settings-box {
             background: #0f172a;
             border: 1px solid #334155;
@@ -522,7 +515,6 @@
         <div class="modal-card">
             <h2>StackOut</h2>
 
-            <!-- Inbyggda regler i startmenyn -->
             <details style="text-align: left; margin-bottom: 0.75rem;">
                 <summary>Regler & Hur man spelar 📖</summary>
                 <div style="padding-top:0.5rem; line-height:1.4; font-size: 0.8rem; color: #94a3b8;">
@@ -533,14 +525,6 @@
                         <li><strong>Jokrar (J)</strong> kan ersätta vilket nummer som helst.</li>
                         <li>Turen avslutas genom att klicka på ett kort i din hand och sedan välja en av dina 4 egna slänghögar.</li>
                     </ul>
-                </div>
-            </details>
-
-            <!-- Information om mobila enheter -->
-            <details style="text-align: left; margin-bottom: 0.75rem; background: #0f172a; border-color: #334155;">
-                <summary style="font-size: 0.8rem; color: #f59e0b;">📱 Viktig info om mobila enheter</summary>
-                <div style="padding-top: 0.4rem; font-size: 0.75rem; color: #94a3b8; line-height: 1.3;">
-                    Online Multiplayer fungerar för stunden <strong>inte optimalt på mobila enheter</strong> (på grund av mobila nätverksbrandväggar och NAT-begränsningar). Vi rekommenderar att ni spelar på datorer via fast nätverk eller Wi-Fi.
                 </div>
             </details>
 
@@ -610,14 +594,6 @@
                 </div>
 
                 <div id="online-lobby-view" style="display: none;">
-                    <!-- Informationsblock om hur hosting fungerar -->
-                    <details style="text-align: left; margin-bottom: 0.75rem; background: #0f172a; border-color: #334155;">
-                        <summary style="font-size: 0.8rem; color: #f59e0b;">ℹ️ Information om anslutning & rum</summary>
-                        <div style="padding-top: 0.4rem; font-size: 0.75rem; color: #94a3b8; line-height: 1.3;">
-                            Spelet körs inte på någon extern server. Det är <strong>värdens (admins) maskin</strong> som står som host för rummet. Om värden stänger ner eller lämnar bryts anslutningen och rummet stängs.
-                        </div>
-                    </details>
-
                     <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.25rem;">Dela rummet med kod eller länk:</div>
                     <div style="display:flex; gap:0.4rem; margin-bottom:0.75rem;">
                         <input type="text" id="display-room-code" readonly style="margin:0; text-align:center; font-weight:bold; color:#f59e0b; font-size:1.1rem; flex:1; letter-spacing: 2px;">
@@ -664,13 +640,12 @@
                     <div id="guest-controls-view" class="guest-settings-box" style="display: none;">
                         <div><strong>Spelläge:</strong> <span id="guest-view-mode" style="color:#38bdf8;">Standard</span></div>
                         <div id="guest-view-blitz-row" style="display:none;"><strong>Blitz-tid:</strong> <span id="guest-view-blitz-time" style="color:#f59e0b;">20s</span></div>
-                        <div><strong>Starthög:</strong> <span id="guest-view-stock" style="color:#38bdf8;">20 kort</span></div>
+                        <div><strong>Starthög:</strong> <span id="guest-view-stock" style="color:#38bdf8;">20 kort i starthögen</span></div>
                     </div>
 
                     <div id="lobby-player-count-title" style="text-align:left; font-size:0.85rem; margin-bottom:0.25rem; font-weight:bold;">Anslutna spelare (1/8):</div>
                     <ul id="connected-players-list" class="lobby-list"></ul>
 
-                    <!-- Statistik-knapp under spellistan -->
                     <div style="margin-bottom: 0.75rem;">
                         <button class="btn" style="width: 100%; background: #475569; font-size: 0.9rem;" onclick="openStatsModal()">📊 Spelarstatistik</button>
                     </div>
@@ -706,7 +681,7 @@
                 <h2 style="margin: 0; font-size: 1.2rem;">📊 Rumsstatistik</h2>
                 <button class="btn" style="background: #334155; padding: 0.2rem 0.6rem; font-size: 0.8rem; min-height: auto;" onclick="closeStatsModal()">✕</button>
             </div>
-            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.75rem; text-align: left;">Statistik för alla spelare som varit med i detta rum (klicka på rubrikerna för att sortera):</p>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.75rem; text-align: left;">Statistik för alla spelare som varit med i detta rum:</p>
             
             <div style="overflow-x: auto;">
                 <table class="stats-table">
@@ -721,7 +696,6 @@
                         </tr>
                     </thead>
                     <tbody id="stats-table-body">
-                        <!-- Fylls dynamiskt -->
                     </tbody>
                 </table>
             </div>
@@ -743,7 +717,6 @@
         </div>
     </div>
 
-    <!-- Toast Overlay -->
     <div id="toast-banner" class="toast-banner">Din tur!</div>
 
     <header>
@@ -751,7 +724,6 @@
     </header>
 
     <main class="game-container">
-        <!-- Samlad Enhetlig Turn- & Statusbanner -->
         <div id="turn-banner-box" class="turn-banner-box" role="status">Välkommen! Välj spelläge i menyn.</div>
 
         <section class="section-card">
@@ -784,7 +756,7 @@
                     <h3>Min spelhög</h3>
                     <div style="display: flex; gap: 1rem; align-items: center;">
                         <div id="player-stock-top" class="card empty-slot" onclick="selectCard('stock', 0)">Inget</div>
-                        <div style="font-size: 0.75rem; color: #94a3b8;">Klicka för att spela kortet från stocken.</div>
+                        <div style="font-size: 0.75rem; color: #94a3b8;">Klicka för att spela kortet från starthögen.</div>
                     </div>
                 </div>
 
@@ -800,7 +772,6 @@
             </div>
         </section>
 
-        <!-- Spelchatt under spelets gång -->
         <section class="chat-section" id="game-chat-section" style="display: none;">
             <h3 style="font-size: 0.9rem; color: #38bdf8; text-align: left;">Spelchat</h3>
             <div id="game-chat-messages" class="chat-messages"></div>
@@ -905,7 +876,7 @@
                 blitzRow.style.display = 'none';
             }
 
-            let stockText = sSize === 'debug' ? '🛠️ Debug (2 kort)' : sSize + ' kort';
+            let stockText = sSize === 'debug' ? '🛠️ Debug (2 kort i starthögen)' : sSize + ' kort i starthögen';
             document.getElementById('guest-view-stock').textContent = stockText;
         }
 
@@ -1045,7 +1016,6 @@
 
         function registerGameEndStats(winnerName) {
             if (!gameState.players) return;
-
             if (gameType === 'online' && !isHost) return;
 
             gameState.players.forEach(p => {
@@ -1207,8 +1177,8 @@
             blitzTimeLimit = parseInt(document.getElementById('single-blitz-time').value);
 
             let val = document.getElementById('single-player-count').value;
-            let count = val === 'debug' || val === '8_cards' ? 2 : parseInt(val);
-            let stockSize = val === 'debug' ? 2 : (val === '8_cards' ? 8 : (count === 2 ? 20 : (count === 3 ? 16 : 12)));
+            let count = val === 'debug' || val === '8' ? 2 : parseInt(val);
+            let stockSize = val === 'debug' ? 2 : (val === '8' ? 8 : (count === 2 ? 20 : (count === 3 ? 16 : 12)));
 
             gameState.numPlayers = count;
             gameState.gameOver = false;
@@ -2213,7 +2183,6 @@
 
         function validateAndCleanText(text) {
             if (/[<>]/g.test(text)) return null;
-            
             const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
             if (emojiRegex.test(text)) return null;
 
@@ -2382,7 +2351,7 @@
                         <div style="display:flex; flex-direction:column; align-items:center;">
                             <div style="font-size:0.75rem; margin-bottom:2px; font-weight:bold; color:#38bdf8;">Kort kvar: ${opp.stock.length}</div>
                             <div class="card mini-card ${getCardClass(topStock)}">
-                                ${renderCardHTML(topStock, 'Stock')}
+                                ${renderCardHTML(topStock, 'Starthög')}
                             </div>
                         </div>
                         <div style="display:flex; gap:0.3rem;">
@@ -2417,7 +2386,7 @@
             let isStockSelected = gameState.selectedCard && gameState.selectedCard.source === 'stock';
 
             pStockTopEl.className = `card ${getCardClass(topUserStock)} ${isStockSelected ? 'selected' : ''}`;
-            pStockTopEl.innerHTML = renderCardHTML(topUserStock, 'Stock');
+            pStockTopEl.innerHTML = renderCardHTML(topUserStock, 'Starthög');
 
             let discardsContainer = document.getElementById('player-discards-container');
             discardsContainer.innerHTML = '';
