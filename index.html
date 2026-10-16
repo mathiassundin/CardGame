@@ -636,7 +636,6 @@
                         </select>
                     </div>
 
-                    <!-- Gästens vy för inställningar i realtid -->
                     <div id="guest-controls-view" class="guest-settings-box" style="display: none;">
                         <div><strong>Spelläge:</strong> <span id="guest-view-mode" style="color:#38bdf8;">Standard</span></div>
                         <div id="guest-view-blitz-row" style="display:none;"><strong>Blitz-tid:</strong> <span id="guest-view-blitz-time" style="color:#f59e0b;">20s</span></div>
@@ -1177,8 +1176,8 @@
             blitzTimeLimit = parseInt(document.getElementById('single-blitz-time').value);
 
             let val = document.getElementById('single-player-count').value;
-            let count = val === 'debug' || val === '8' ? 2 : parseInt(val);
-            let stockSize = val === 'debug' ? 2 : (val === '8' ? 8 : (count === 2 ? 20 : (count === 3 ? 16 : 12)));
+            let count = val === 'debug' || val === '8_cards' ? 2 : parseInt(val);
+            let stockSize = val === 'debug' ? 2 : (val === '8_cards' ? 8 : (count === 2 ? 20 : (count === 3 ? 16 : 12)));
 
             gameState.numPlayers = count;
             gameState.gameOver = false;
@@ -1704,6 +1703,9 @@
             }
         }
 
+        /* 
+           VÄRDEN: Skapar rum med standard PeerJS (direkt P2P) 
+        */
         function createOnlineRoom() {
             let nick = document.getElementById('online-nickname').value.trim() || 'Spelare 1';
             let status = document.getElementById('online-status');
@@ -1713,6 +1715,8 @@
 
             try {
                 if (peer && !peer.destroyed) peer.destroy();
+                
+                // Ursprunglig ren PeerJS-instansiering
                 peer = new Peer(shortRoomId);
                 
                 peer.on('open', (id) => {
@@ -1739,31 +1743,31 @@
                 });
 
                 peer.on('connection', (conn) => {
-                    conn.on('open', () => {
-                        conn.on('data', (data) => handleIncomingData(data, conn));
-                        conn.on('close', () => {
-                            let leftPlayer = connectedPlayersList.find(p => p.peerId === conn.peer);
-                            connections = connections.filter(c => c !== conn);
-                            connectedPlayersList = connectedPlayersList.filter(p => p.peerId !== conn.peer);
-                            
-                            if (leftPlayer) {
-                                broadcastLobby();
-                                if (gameState.players && gameState.players.length > 0 && !gameState.gameOver) {
-                                    let targetPl = gameState.players.find(pl => pl.name === leftPlayer.name);
-                                    if (targetPl && !targetPl.isLeft) {
-                                        let targetIdx = gameState.players.indexOf(targetPl);
-                                        handlePlayerLeft(leftPlayer.name, targetIdx);
-                                        connections.forEach(c => c.send({ 
-                                            type: 'PLAYER_LEFT_GAME', 
-                                            playerName: leftPlayer.name, 
-                                            playerId: targetIdx 
-                                        }));
-                                    }
-                                } else {
-                                    broadcastSystemMessage(`${leftPlayer.name} har lämnat lobbyn.`);
+                    // Registrera lyssnaren DIREKT på anslutningsobjektet för att inte missa paket
+                    conn.on('data', (data) => handleIncomingData(data, conn));
+                    
+                    conn.on('close', () => {
+                        let leftPlayer = connectedPlayersList.find(p => p.peerId === conn.peer);
+                        connections = connections.filter(c => c !== conn);
+                        connectedPlayersList = connectedPlayersList.filter(p => p.peerId !== conn.peer);
+                        
+                        if (leftPlayer) {
+                            broadcastLobby();
+                            if (gameState.players && gameState.players.length > 0 && !gameState.gameOver) {
+                                let targetPl = gameState.players.find(pl => pl.name === leftPlayer.name);
+                                if (targetPl && !targetPl.isLeft) {
+                                    let targetIdx = gameState.players.indexOf(targetPl);
+                                    handlePlayerLeft(leftPlayer.name, targetIdx);
+                                    connections.forEach(c => c.send({ 
+                                        type: 'PLAYER_LEFT_GAME', 
+                                        playerName: leftPlayer.name, 
+                                        playerId: targetIdx 
+                                    }));
                                 }
+                            } else {
+                                broadcastSystemMessage(`${leftPlayer.name} har lämnat lobbyn.`);
                             }
-                        });
+                        }
                     });
                 });
 
@@ -1771,7 +1775,7 @@
                     if (err.type === 'unavailable-id') {
                         createOnlineRoom();
                     } else {
-                        status.textContent = "Kunde inte ansluta till nätverket: " + err.type;
+                        status.textContent = "Fel vid skapande av rum: " + err.type;
                     }
                 });
             } catch (e) {
@@ -1779,6 +1783,9 @@
             }
         }
 
+        /* 
+           GÄSTEN: Ansluter rent med peer.connect(roomId) 
+        */
         function connectToRoom() {
             let roomId = document.getElementById('online-room-id').value.trim().toUpperCase();
             let nick = document.getElementById('online-nickname').value.trim();
@@ -1793,7 +1800,7 @@
                 return;
             }
 
-            status.textContent = "Söker efter rum...";
+            status.textContent = "Ansluter...";
 
             if (hostConnection) {
                 try { hostConnection.close(); } catch(e){}
@@ -1806,21 +1813,23 @@
                 }
 
                 let executeConnect = () => {
+                    // Ren anslutning precis som tidigare versioner
                     let conn = peer.connect(roomId);
                     isHost = false;
                     isMyReadyStatus = false;
                     hostConnection = conn;
                     currentRoomId = roomId;
 
+                    // Registrera datalyssnaren omedelbart
+                    conn.on('data', (data) => handleIncomingData(data, conn));
+
                     conn.on('open', () => {
                         connections = [conn];
                         conn.send({ type: 'JOIN_LOBBY', name: nick, peerId: peer.id });
                     });
 
-                    conn.on('data', (data) => handleIncomingData(data, conn));
-
-                    conn.on('error', () => {
-                        status.textContent = "Kunde inte hitta rummet eller så är det fullt.";
+                    conn.on('error', (err) => {
+                        status.textContent = "Kunde inte ansluta till rummet.";
                     });
 
                     conn.on('close', () => {
@@ -2183,7 +2192,7 @@
 
         function validateAndCleanText(text) {
             if (/[<>]/g.test(text)) return null;
-            const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
+            const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
             if (emojiRegex.test(text)) return null;
 
             let div = document.createElement('div');
@@ -2424,7 +2433,8 @@
             user.hand.forEach((card, index) => {
                 let isSelected = gameState.selectedCard && gameState.selectedCard.source === 'hand' && gameState.selectedCard.index === index;
                 let isSourceTargeted = latestMoveInfo && latestMoveInfo.sourceType === 'hand' && latestMoveInfo.sourceIdx === index && latestMoveInfo.player === myPlayerId;
-                let btn = document.createElement('button');
+                let btn = document.getElementById('btn-hand-' + index) || document.createElement('button');
+                btn.id = 'btn-hand-' + index;
                 btn.className = `card ${getCardClass(card)} ${isSelected ? 'selected' : ''} ${isSourceTargeted ? 'card-highlight-source' : ''}`;
                 btn.innerHTML = renderCardHTML(card, 'Hand');
                 btn.onclick = () => selectCard('hand', index);
