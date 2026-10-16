@@ -223,6 +223,15 @@
             height: 62px;
         }
 
+        /* Baksida för kort */
+        .card.card-back {
+            background: linear-gradient(135deg, #1e293b 25%, #0f172a 25%, #0f172a 50%, #1e293b 50%, #1e293b 75%, #0f172a 75%, #0f172a 100%);
+            background-size: 10px 10px;
+            border-color: #475569;
+            color: #38bdf8;
+            cursor: default;
+        }
+
         .card.blue, span.blue { background-color: #0369a1; border-color: #38bdf8; color: #f0f9ff; }
         .card.green, span.green { background-color: #15803d; border-color: #4ade80; color: #f0fdf4; }
         .card.red, span.red { background-color: #b91c1c; border-color: #f87171; color: #fef2f2; }
@@ -452,6 +461,14 @@
             color: #64748b;
             margin-right: 4px;
         }
+        .chat-input-row {
+            display: flex;
+            gap: 0.4rem;
+        }
+        .chat-input-row input {
+            margin-bottom: 0;
+            flex: 1;
+        }
 
         /* Overlay Notice for Copying Buttons */
         .copy-button-container {
@@ -556,10 +573,10 @@
 
                 <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Antal spelare & stockstorlek:</label>
                 <select id="single-player-count">
-                    <option value="2">2 Spelare (20 kort i starthögen)</option>
-                    <option value="3">3 Spelare (16 kort i starthögen)</option>
-                    <option value="4">4 Spelare (12 kort i starthögen)</option>
-                    <option value="debug">🛠️ Debug-läge (2 kort i starthögen)</option>
+                    <option value="2">2 Spelare (20 kort i stocken)</option>
+                    <option value="3">3 Spelare (16 kort i stocken)</option>
+                    <option value="4">4 Spelare (12 kort i stocken)</option>
+                    <option value="debug">🛠️ Debug-läge (2 kort i stocken)</option>
                 </select>
                 <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                     <button class="btn" style="background: #334155; flex: 1;" onclick="showMainMenu()">Tillbaka</button>
@@ -634,10 +651,10 @@
 
                         <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Storlek på starthög:</label>
                         <select id="online-stock-size" onchange="onChangeOnlineLobby()">
-                            <option value="20">20 kort i starthögen</option>
-                            <option value="16">16 kort i starthögen</option>
-                            <option value="12">12 kort i starthögen</option>
-                            <option value="debug">🛠️ Debug-läge (2 kort i starthögen)</option>
+                            <option value="20">20 kort i stocken</option>
+                            <option value="16">16 kort i stocken</option>
+                            <option value="12">12 kort i stocken</option>
+                            <option value="debug">🛠️ Debug-läge (2 kort i stocken)</option>
                         </select>
                     </div>
 
@@ -757,7 +774,7 @@
         <section id="local-player-section" class="section-card">
             <h2 class="section-title">
                 <span id="local-player-name">Din Spelplan (Du)</span>
-                <span id="player-stock-count" style="color:#38bdf8;">Antal kort kvar: 20</span>
+                <span id="player-stock-count" style="color:#38bdf8;">Kort kvar: 20</span>
             </h2>
 
             <div class="play-area">
@@ -781,11 +798,12 @@
             </div>
         </section>
 
+        <!-- Spelchatt under spelets gång -->
         <section class="chat-section" id="game-chat-section" style="display: none;">
-            <h3 style="font-size: 0.9rem; color: #38bdf8; text-align: left;">Lobbychat</h3>
+            <h3 style="font-size: 0.9rem; color: #38bdf8; text-align: left;">Spelchat</h3>
             <div id="game-chat-messages" class="chat-messages"></div>
             <div class="chat-input-row" style="margin-top:0.3rem;">
-                <input type="text" id="game-chat-input" placeholder="Skriv ett meddelande..." maxlength="200" onkeydown="if(event.key==='Enter') sendChatMessage();">
+                <input type="text" id="game-chat-input" placeholder="Skriv ett meddelande i spelet..." maxlength="200" onkeydown="if(event.key==='Enter') sendChatMessage();">
                 <button class="btn" style="padding: 0.4rem 0.8rem;" onclick="sendChatMessage()">Skicka</button>
             </div>
         </section>
@@ -2207,7 +2225,11 @@
         function sendChatMessage() {
             if (hasLeftGame) return;
 
-            let input = document.getElementById(gameType === 'online' && document.getElementById('online-lobby-view').style.display === 'block' ? 'chat-input' : 'game-chat-input');
+            // Identifiera vilket chat-inputfält som faktiskt visas för stunden
+            let gameChatSection = document.getElementById('game-chat-section');
+            let isGameChatVisible = gameChatSection && gameChatSection.style.display !== 'none';
+            let input = isGameChatVisible ? document.getElementById('game-chat-input') : document.getElementById('chat-input');
+            
             if (!input) return;
             let rawText = input.value.trim();
             if (!rawText) return;
@@ -2314,6 +2336,17 @@
 
                 let topStock = opp.stock.length > 0 ? opp.stock[opp.stock.length - 1] : null;
 
+                // Generera baksidor för motståndarens hand (antalkort på handen)
+                let handCount = opp.hand ? opp.hand.length : 0;
+                let opponentHandBacksHTML = '';
+                for (let h = 0; h < handCount; h++) {
+                    opponentHandBacksHTML += `
+                        <div class="card mini-card card-back" style="margin-right: 2px;" title="Motståndarkort">
+                            <span style="font-size:0.7rem; opacity:0.7;">🎴</span>
+                        </div>
+                    `;
+                }
+
                 let discardsHTML = '';
                 opp.discards.forEach(function(hog, dIdx) {
                     let topCard = hog.length > 0 ? hog[hog.length - 1] : null;
@@ -2347,15 +2380,22 @@
                         <span style="color: ${opp.color || '#f8fafc'};">${opp.name}</span>
                         ${isCurrent ? '<span style="background: #f59e0b; color: #000; font-size:0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">SPELAR NU ⭐</span>' : ''}
                     </div>
-                    <div style="display:flex; gap:0.5rem; justify-content:space-between; align-items:flex-start;">
+                    <div style="display:flex; gap:0.5rem; justify-content:space-between; align-items:flex-start; margin-bottom:0.4rem;">
                         <div style="display:flex; flex-direction:column; align-items:center;">
-                            <div style="font-size:0.75rem; margin-bottom:2px; font-weight:bold; color:#38bdf8;">Stock: ${opp.stock.length}</div>
+                            <div style="font-size:0.75rem; margin-bottom:2px; font-weight:bold; color:#38bdf8;">Kort kvar: ${opp.stock.length}</div>
                             <div class="card mini-card ${getCardClass(topStock)}">
                                 ${renderCardHTML(topStock, 'Stock')}
                             </div>
                         </div>
                         <div style="display:flex; gap:0.3rem;">
                             ${discardsHTML}
+                        </div>
+                    </div>
+                    <!-- Motståndarens Hand (Visas som baksidor) -->
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 0.3rem; border-radius: 6px; border: 1px solid #1e293b; display: flex; align-items: center; gap: 0.3rem;">
+                        <span style="font-size: 0.7rem; color: #94a3b8; font-weight: bold; min-width: 42px;">Hand (${handCount}):</span>
+                        <div style="display: flex; flex-wrap: wrap; gap: 2px;">
+                            ${opponentHandBacksHTML || '<span style="font-size: 0.7rem; color: #64748b; font-style: italic;">Inga kort</span>'}
                         </div>
                     </div>
                 `;
@@ -2374,7 +2414,7 @@
                 centerContainer.appendChild(btn);
             });
 
-            document.getElementById('player-stock-count').textContent = 'Antal kort kvar: ' + user.stock.length;
+            document.getElementById('player-stock-count').textContent = 'Kort kvar: ' + user.stock.length;
             let pStockTopEl = document.getElementById('player-stock-top');
             let topUserStock = user.stock.length > 0 ? user.stock[user.stock.length - 1] : null;
             let isStockSelected = gameState.selectedCard && gameState.selectedCard.source === 'stock';
