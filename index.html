@@ -571,12 +571,13 @@
                     </select>
                 </div>
 
-                <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Antal spelare & stockstorlek:</label>
+                <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Antal spelare & starthögens storlek:</label>
                 <select id="single-player-count">
-                    <option value="2">2 Spelare (20 kort i stocken)</option>
-                    <option value="3">3 Spelare (16 kort i stocken)</option>
-                    <option value="4">4 Spelare (12 kort i stocken)</option>
-                    <option value="debug">🛠️ Debug-läge (2 kort i stocken)</option>
+                    <option value="2">2 Spelare (20 kort i starthögen)</option>
+                    <option value="3">3 Spelare (16 kort i starthögen)</option>
+                    <option value="4">4 Spelare (12 kort i starthögen)</option>
+                    <option value="8_cards">2 Spelare (8 kort i starthögen)</option>
+                    <option value="debug">🛠️ Debug-läge (2 kort i starthögen)</option>
                 </select>
                 <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                     <button class="btn" style="background: #334155; flex: 1;" onclick="showMainMenu()">Tillbaka</button>
@@ -651,10 +652,11 @@
 
                         <label style="display:block; text-align:left; font-size:0.85rem; margin-bottom:0.25rem;">Storlek på starthög:</label>
                         <select id="online-stock-size" onchange="onChangeOnlineLobby()">
-                            <option value="20">20 kort i stocken</option>
-                            <option value="16">16 kort i stocken</option>
-                            <option value="12">12 kort i stocken</option>
-                            <option value="debug">🛠️ Debug-läge (2 kort i stocken)</option>
+                            <option value="20">20 kort i starthögen</option>
+                            <option value="16">16 kort i starthögen</option>
+                            <option value="12">12 kort i starthögen</option>
+                            <option value="8">8 kort i starthögen</option>
+                            <option value="debug">🛠️ Debug-läge (2 kort i starthögen)</option>
                         </select>
                     </div>
 
@@ -1205,8 +1207,8 @@
             blitzTimeLimit = parseInt(document.getElementById('single-blitz-time').value);
 
             let val = document.getElementById('single-player-count').value;
-            let count = val === 'debug' ? 2 : parseInt(val);
-            let stockSize = val === 'debug' ? 2 : (count === 2 ? 20 : (count === 3 ? 16 : 12));
+            let count = val === 'debug' || val === '8_cards' ? 2 : parseInt(val);
+            let stockSize = val === 'debug' ? 2 : (val === '8_cards' ? 8 : (count === 2 ? 20 : (count === 3 ? 16 : 12)));
 
             gameState.numPlayers = count;
             gameState.gameOver = false;
@@ -1768,12 +1770,6 @@
 
                 peer.on('connection', (conn) => {
                     conn.on('open', () => {
-                        if (connectedPlayersList.length >= 8) {
-                            conn.send({ type: 'ROOM_FULL' });
-                            setTimeout(() => conn.close(), 500);
-                            return;
-                        }
-
                         conn.on('data', (data) => handleIncomingData(data, conn));
                         conn.on('close', () => {
                             let leftPlayer = connectedPlayersList.find(p => p.peerId === conn.peer);
@@ -1998,38 +1994,42 @@
                     return;
                 }
 
-                if (connectedPlayersList.length < 8) {
-                    if (!connections.includes(conn)) {
-                        connections.push(conn);
-                    }
-                    let newId = connectedPlayersList.length;
-                    let assignedColor = PLAYER_COLORS[newId % PLAYER_COLORS.length];
-                    connectedPlayersList.push({ id: newId, name: data.name, isHost: false, isReady: false, peerId: data.peerId, color: assignedColor });
-                    
-                    if (!roomPlayersChronological.includes(data.name)) {
-                        roomPlayersChronological.push(data.name);
-                    }
-                    if (!roomStats[data.name]) {
-                        roomStats[data.name] = { matches: 0, wins: 0, losses: 0 };
-                    }
-
-                    conn.send({ type: 'JOIN_ACCEPTED' });
-
-                    let currentMode = document.getElementById('online-game-mode').value;
-                    let currentBlitzTime = parseInt(document.getElementById('online-blitz-time').value);
-                    let currentStockSize = document.getElementById('online-stock-size').value;
-
-                    conn.send({
-                        type: 'SETTINGS_UPDATE',
-                        gameMode: currentMode,
-                        blitzTimeLimit: currentBlitzTime,
-                        stockSize: currentStockSize
-                    });
-
-                    broadcastLobby();
-                    broadcastStatsSync();
-                    broadcastSystemMessage(`${data.name} har gått med i lobbyn.`);
+                if (connectedPlayersList.length >= 8) {
+                    conn.send({ type: 'ROOM_FULL' });
+                    setTimeout(() => { try { conn.close(); } catch(e){} }, 200);
+                    return;
                 }
+
+                if (!connections.includes(conn)) {
+                    connections.push(conn);
+                }
+                let newId = connectedPlayersList.length;
+                let assignedColor = PLAYER_COLORS[newId % PLAYER_COLORS.length];
+                connectedPlayersList.push({ id: newId, name: data.name, isHost: false, isReady: false, peerId: data.peerId, color: assignedColor });
+                
+                if (!roomPlayersChronological.includes(data.name)) {
+                    roomPlayersChronological.push(data.name);
+                }
+                if (!roomStats[data.name]) {
+                    roomStats[data.name] = { matches: 0, wins: 0, losses: 0 };
+                }
+
+                conn.send({ type: 'JOIN_ACCEPTED' });
+
+                let currentMode = document.getElementById('online-game-mode').value;
+                let currentBlitzTime = parseInt(document.getElementById('online-blitz-time').value);
+                let currentStockSize = document.getElementById('online-stock-size').value;
+
+                conn.send({
+                    type: 'SETTINGS_UPDATE',
+                    gameMode: currentMode,
+                    blitzTimeLimit: currentBlitzTime,
+                    stockSize: currentStockSize
+                });
+
+                broadcastLobby();
+                broadcastStatsSync();
+                broadcastSystemMessage(`${data.name} har gått med i lobbyn.`);
             } else if (data.type === 'PLAYER_READY_STATUS' && isHost) {
                 let target = connectedPlayersList.find(p => p.peerId === data.peerId);
                 if (target) {
@@ -2214,7 +2214,7 @@
         function validateAndCleanText(text) {
             if (/[<>]/g.test(text)) return null;
             
-            const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
+            const emojiRegex = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u2600-\u27BF\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2638}-\u{263B}]/u;
             if (emojiRegex.test(text)) return null;
 
             let div = document.createElement('div');
@@ -2225,7 +2225,6 @@
         function sendChatMessage() {
             if (hasLeftGame) return;
 
-            // Identifiera vilket chat-inputfält som faktiskt visas för stunden
             let gameChatSection = document.getElementById('game-chat-section');
             let isGameChatVisible = gameChatSection && gameChatSection.style.display !== 'none';
             let input = isGameChatVisible ? document.getElementById('game-chat-input') : document.getElementById('chat-input');
@@ -2336,7 +2335,6 @@
 
                 let topStock = opp.stock.length > 0 ? opp.stock[opp.stock.length - 1] : null;
 
-                // Generera baksidor för motståndarens hand (antalkort på handen)
                 let handCount = opp.hand ? opp.hand.length : 0;
                 let opponentHandBacksHTML = '';
                 for (let h = 0; h < handCount; h++) {
@@ -2391,7 +2389,6 @@
                             ${discardsHTML}
                         </div>
                     </div>
-                    <!-- Motståndarens Hand (Visas som baksidor) -->
                     <div style="background: rgba(15, 23, 42, 0.6); padding: 0.3rem; border-radius: 6px; border: 1px solid #1e293b; display: flex; align-items: center; gap: 0.3rem;">
                         <span style="font-size: 0.7rem; color: #94a3b8; font-weight: bold; min-width: 42px;">Hand (${handCount}):</span>
                         <div style="display: flex; flex-wrap: wrap; gap: 2px;">
